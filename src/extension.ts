@@ -1,26 +1,34 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import * as vscode from 'vscode'
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+  console.log('extension activated')
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "teleport" is now active!');
+  const wholeLineDecoration = vscode.window.createTextEditorDecorationType({
+    isWholeLine: true,
+    after: {
+      contentText: 'this line is active',
+      margin: '0 0 0 20px',
+      color: '#3399FF',
+    },
+  })
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('teleport.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Teleport!');
-	});
+  let currentLine: number
+  let startPos: vscode.Position
+  let endPos: vscode.Position
+  let range: vscode.Range
 
-	context.subscriptions.push(disposable);
+  vscode.window.onDidChangeTextEditorSelection((event) => {
+    if (event.textEditor === vscode.window.activeTextEditor) {
+      if (currentLine !== event.selections[0].active.line) {
+        currentLine = event.selections[0].active.line
+
+        startPos = new vscode.Position(currentLine, 0)
+        endPos = new vscode.Position(currentLine, 0)
+
+        range = new vscode.Range(startPos, endPos)
+
+        event.textEditor.setDecorations(wholeLineDecoration, [range])
+      }
+    }
+  })
 }
-
-// This method is called when your extension is deactivated
-export function deactivate() {}
