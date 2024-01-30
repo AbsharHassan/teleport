@@ -17,17 +17,36 @@ export function activate(context: vscode.ExtensionContext) {
   let endPos: vscode.Position
   let range: vscode.Range
 
+  let prevLine: number
+
+  let prevRange: vscode.Range
+  let currentRange: vscode.Range
+  let flagChange: boolean
+
+  vscode.workspace.onDidChangeTextDocument((event) => {
+    prevLine = event.contentChanges[0].range.start.line
+  })
+
   vscode.window.onDidChangeTextEditorSelection((event) => {
+    // if (event.textEditor === vscode.window.activeTextEditor) {
+    //   if (currentLine !== event.selections[0].active.line) {
+    //     currentLine = event.selections[0].active.line
+
+    //     startPos = new vscode.Position(currentLine, 0)
+    //     endPos = new vscode.Position(currentLine, 0)
+
+    //     range = new vscode.Range(startPos, endPos)
+
+    //     event.textEditor.setDecorations(wholeLineDecoration, [range])
+    //   }
+    // }
+
     if (event.textEditor === vscode.window.activeTextEditor) {
       if (currentLine !== event.selections[0].active.line) {
         currentLine = event.selections[0].active.line
 
-        startPos = new vscode.Position(currentLine, 0)
-        endPos = new vscode.Position(currentLine, 0)
-
-        range = new vscode.Range(startPos, endPos)
-
-        event.textEditor.setDecorations(wholeLineDecoration, [range])
+        if (Math.abs(currentLine - prevLine) > 3) {
+        }
       }
     }
   })
