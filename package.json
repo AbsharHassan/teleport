@@ -16,8 +16,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "teleport.helloWorld",
-        "title": "Hello World"
+        "command": "teleport.showMessage",
+        "title": "Show Message"
       }
     ]
   },
