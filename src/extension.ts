@@ -15,9 +15,16 @@ export function activate(context: vscode.ExtensionContext) {
 
   disposables.push(
     vscode.commands.registerCommand('teleport.showMessage', (...args) => {
-      vscode.window.showInformationMessage(
-        `yeah, you came from ${(args[0] as vscode.Position).line + 1}`
-      )
+      const editor = vscode.window.activeTextEditor
+
+      if (editor) {
+        const line = args[0].line
+        const character = Number.MAX_VALUE
+        const range = new vscode.Range(line, character, line, character)
+
+        editor.selection = new vscode.Selection(range.start, range.end)
+        editor.revealRange(range)
+      }
     })
   )
 
