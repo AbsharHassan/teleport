@@ -16,10 +16,18 @@
   "contributes": {
     "commands": [
       {
-        "command": "teleport.showMessage",
-        "title": "Show Message"
+        "title": "Show Message",
+        "command": "teleport.showMessage"
       }
-    ]
+    ],
+    "configuration": {
+      "properties": {
+        "teleport.enableCodeLens": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
