@@ -10,7 +10,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   }
 
   private cursor: vscode.Position = new vscode.Position(0, 0)
+  private currentLine: vscode.Position = new vscode.Position(0, 0)
+  private prevLine: vscode.Position = new vscode.Position(0, 0)
+
   private codeLenses: vscode.CodeLens[] = []
+
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> =
     new vscode.EventEmitter<void>()
   public readonly onDidChangeCodeLenses: vscode.Event<void> =
@@ -36,10 +40,13 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     token: vscode.CancellationToken
   ) {
     codeLens.command = {
-      title: 'You are on line ' + (this.cursor.line + 1),
+      title: 'You came from line: ' + (this.prevLine.line + 1),
       // tooltip: 'Use this to navigate between your recent most changes',
       command: 'teleport.showMessage',
+      arguments: [this.prevLine],
     }
+
+    this.prevLine = this.cursor
 
     return codeLens
   }

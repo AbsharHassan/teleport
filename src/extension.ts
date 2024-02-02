@@ -14,8 +14,10 @@ export function activate(context: vscode.ExtensionContext) {
   )
 
   disposables.push(
-    vscode.commands.registerCommand('teleport.showMessage', (args: any) => {
-      vscode.window.showInformationMessage(`severe pain `)
+    vscode.commands.registerCommand('teleport.showMessage', (...args) => {
+      vscode.window.showInformationMessage(
+        `yeah, you came from ${(args[0] as vscode.Position).line + 1}`
+      )
     })
   )
 
