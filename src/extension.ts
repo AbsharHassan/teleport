@@ -23,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
         const range = new vscode.Range(line, character, line, character)
 
         editor.selection = new vscode.Selection(range.start, range.end)
-        editor.revealRange(range)
+        editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
       }
     })
   )
