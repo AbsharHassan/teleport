@@ -24,6 +24,8 @@ export function activate(context: vscode.ExtensionContext) {
 
         editor.selection = new vscode.Selection(range.start, range.end)
         editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
+
+        codelensProvider.inHistory = true
       }
     })
   )
