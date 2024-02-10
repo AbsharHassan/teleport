@@ -3,29 +3,45 @@ import * as vscode from 'vscode'
 export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   constructor() {
     vscode.window.onDidChangeTextEditorSelection((event) => {
-      // this.currentLine = new vscode.Position(event.selections[0].active.line, 0)
-      this.lineHistoryArray[0] = new vscode.Position(
+      const currentLine = new vscode.Position(
         event.selections[0].active.line,
         0
       )
 
-      // console.log({ currentLine: this.lineHistoryArray[0]?.line })
-      // console.log({ prevLine: this.lineHistoryArray[1]?.line })
-      // console.log({ olderLine: this.lineHistoryArray[2]?.line })
-      // console.log({ oldestLine: this.lineHistoryArray[3]?.line })
+      const temp = this.lineHistoryArray.findIndex((position) => {
+        return position.line === currentLine.line
+      })
 
-      if (this.lineHistoryArray[0].line === this.lineHistoryArray[2].line) {
+      if (temp > -1) {
+        console.log(`value of temp is ${temp}`)
+
+        this.cursor = this.lineHistoryArray[temp]
         this.inHistory = true
       } else {
         this.inHistory = false
+
+        // update the history
+        this.lineHistoryArray[3] = this.lineHistoryArray[2]
+        this.lineHistoryArray[2] = this.lineHistoryArray[1]
+        this.lineHistoryArray[1] = this.lineHistoryArray[0]
+
+        this.lineHistoryArray[0] = new vscode.Position(
+          event.selections[0].active.line,
+          0
+        )
+        this.cursor = this.lineHistoryArray[0]
       }
 
-      this.cursor = this.lineHistoryArray[0]
+      // this.lineHistoryArray.map((point, index) => {
+      //   console.log(`${index}: ` + point.line)
+      // })
+
       this._onDidChangeCodeLenses.fire()
     })
   }
 
   private cursor: vscode.Position = new vscode.Position(0, 0)
+  private selectedHistoryIndex: number = 1
   private currentLine: vscode.Position = new vscode.Position(0, 0)
   private prevLine: vscode.Position = new vscode.Position(0, 0)
   private oldestLine: vscode.Position = new vscode.Position(0, 0)
@@ -77,28 +93,38 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     codeLens: vscode.CodeLens,
     token: vscode.CancellationToken
   ) {
-    console.log(this.inHistory)
+    // if (this.inHistory) {
+    //   switch (codeLens.range.start.character) {
+    //     case 0:
+    //       codeLens.command = {
+    //         title: 'Go forward to line: ' + (this.lineHistoryArray[0].line + 1),
+    //         command: 'teleport.showMessage',
+    //         arguments: [this.lineHistoryArray[0], false],
+    //       }
+    //       break
+    //     case 1:
+    //       codeLens.command = {
+    //         title:
+    //           'Go even further back to line: ' +
+    //           (this.lineHistoryArray[2].line + 1),
+    //         command: 'teleport.showMessage',
+    //         arguments: [this.lineHistoryArray[2], true],
+    //       }
+    //   }
+    // } else {
+    //   codeLens.command = {
+    //     title: 'You came from line: ' + (this.lineHistoryArray[1]?.line + 1),
+    //     tooltip: 'Use this to navigate between your recent most changes',
+    //     command: 'teleport.showMessage',
+    //     arguments: [this.lineHistoryArray[1], true],
+    //   }
 
-    if (this.inHistory) {
-      // switch (codeLens.range.start.character) {
-      //   case 0:
-      //     codeLens.command = {
-      //       title: 'Go forward to line: ' + (this.lineHistoryArray[1].line + 1),
-      //       command: 'teleport.showMessage',
-      //       arguments: [this.lineHistoryArray[1]],
-      //     }
-      //     break
-      //   case 1:
-      //     codeLens.command = {
-      //       title:
-      //         'Go even further back to line: ' +
-      //         (this.lineHistoryArray[3].line + 1),
-      //       command: 'teleport.showMessage',
-      //       arguments: [this.lineHistoryArray[3]],
-      //     }
-      //     this.lineHistoryArray[3] = this.lineHistoryArray[2]
-      // }
-    } else {
+    //   this.lineHistoryArray[3] = this.lineHistoryArray[2]
+    //   this.lineHistoryArray[2] = this.lineHistoryArray[1]
+    //   this.lineHistoryArray[1] = this.lineHistoryArray[0]
+    // }
+
+    if (!this.inHistory) {
       codeLens.command = {
         title: 'You came from line: ' + (this.lineHistoryArray[1]?.line + 1),
         tooltip: 'Use this to navigate between your recent most changes',
@@ -106,14 +132,40 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
         arguments: [this.lineHistoryArray[1]],
       }
 
-      this.lineHistoryArray[3] = this.lineHistoryArray[2]
+      console.log('yeah no history')
+
+      // this.lineHistoryArray[3] = this.lineHistoryArray[2]
+      // this.lineHistoryArray[2] = this.lineHistoryArray[1]
+      // this.lineHistoryArray[1] = this.lineHistoryArray[0]
+
+      this.lineHistoryArray.map((point, index) => {
+        console.log(`${index}: ` + point.line)
+      })
+    } else {
+      // console.log('history')
+
+      // this.lineHistoryArray.map((point, index) => {
+      //   console.log(`history ${index}: ` + point.line)
+      // })
+
+      switch (codeLens.range.start.character) {
+        case 0:
+          codeLens.command = {
+            title: 'Go forward to line: ' + (this.lineHistoryArray[0].line + 1),
+            command: 'teleport.showMessage',
+            arguments: [this.lineHistoryArray[0], false],
+          }
+          break
+        case 1:
+          codeLens.command = {
+            title:
+              'Go even further back to line: ' +
+              (this.lineHistoryArray[2].line + 1),
+            command: 'teleport.showMessage',
+            arguments: [this.lineHistoryArray[2], true],
+          }
+      }
     }
-
-    // this.oldestLine = this.prevLine
-    this.lineHistoryArray[2] = this.lineHistoryArray[1]
-
-    // this.prevLine = this.cursor
-    this.lineHistoryArray[1] = this.cursor
 
     return codeLens
   }
