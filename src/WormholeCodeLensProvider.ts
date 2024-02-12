@@ -1,30 +1,38 @@
 import * as vscode from 'vscode'
 
 export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
-  constructor() {
+  constructor(wormholeCount = 4) {
+    this.wormholeCount = wormholeCount
+
+    const dummyPosition = new vscode.Position(0, 0)
+
+    for (let i = 0; i < wormholeCount; i++) {
+      this.lineHistoryArray[i] = dummyPosition
+    }
+
     vscode.window.onDidChangeTextEditorSelection((event) => {
       const currentLine = new vscode.Position(
         event.selections[0].active.line,
         0
       )
 
-      const temp = this.lineHistoryArray.findIndex((position) => {
-        return position.line === currentLine.line
-      })
+      const currentLineHistoryIndex = this.lineHistoryArray.findIndex(
+        (position) => {
+          return position.line === currentLine.line
+        }
+      )
 
-      if (temp > -1) {
-        console.log(temp)
-
-        this.selectedHistoryIndex = temp
-        this.cursor = this.lineHistoryArray[temp]
+      if (currentLineHistoryIndex > -1) {
+        this.selectedHistoryIndex = currentLineHistoryIndex
+        this.cursor = this.lineHistoryArray[currentLineHistoryIndex]
         this.inHistory = true
       } else {
         this.inHistory = false
 
         // update the history
-        this.lineHistoryArray[3] = this.lineHistoryArray[2]
-        this.lineHistoryArray[2] = this.lineHistoryArray[1]
-        this.lineHistoryArray[1] = this.lineHistoryArray[0]
+        for (let i = this.lineHistoryArray.length - 1; i > 0; i--) {
+          this.lineHistoryArray[i] = this.lineHistoryArray[i - 1]
+        }
 
         this.lineHistoryArray[0] = new vscode.Position(
           event.selections[0].active.line,
@@ -41,20 +49,10 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     })
   }
 
+  private wormholeCount: number = 4
   private cursor: vscode.Position = new vscode.Position(0, 0)
   private selectedHistoryIndex: number = 1
-  private currentLine: vscode.Position = new vscode.Position(0, 0)
-  private prevLine: vscode.Position = new vscode.Position(0, 0)
-  private oldestLine: vscode.Position = new vscode.Position(0, 0)
-
-  private dummyPosition = new vscode.Position(0, 0)
-
-  private lineHistoryArray: vscode.Position[] = [
-    this.dummyPosition,
-    this.dummyPosition,
-    this.dummyPosition,
-    this.dummyPosition,
-  ]
+  private lineHistoryArray: vscode.Position[] = []
 
   public inHistory: boolean = false
 
@@ -74,15 +72,18 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     let range = new vscode.Range(this.cursor, this.cursor)
 
     if (this.inHistory) {
-      let rangePlusOne = new vscode.Range(
-        this.cursor.line,
-        1,
-        this.cursor.line,
-        1
-      )
-
-      this.codeLenses.push(new vscode.CodeLens(range))
-      this.codeLenses.push(new vscode.CodeLens(rangePlusOne))
+      if (this.selectedHistoryIndex + 1 < this.wormholeCount) {
+        let rangePlusOne = new vscode.Range(
+          this.cursor.line,
+          1,
+          this.cursor.line,
+          1
+        )
+        this.codeLenses.push(new vscode.CodeLens(range))
+        this.codeLenses.push(new vscode.CodeLens(rangePlusOne))
+      } else {
+        this.codeLenses.push(new vscode.CodeLens(range))
+      }
     } else {
       this.codeLenses.push(new vscode.CodeLens(range))
     }
@@ -115,7 +116,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
         case 1:
           codeLens.command = {
             title:
-              'Go even further back to line: ' +
+              `${
+                this.selectedHistoryIndex > 0
+                  ? 'Go even further back to line: '
+                  : 'You came from line: '
+              }` +
               (this.lineHistoryArray[this.selectedHistoryIndex + 1].line + 1),
             command: 'teleport.showMessage',
             arguments: [this.lineHistoryArray[this.selectedHistoryIndex + 1]],
