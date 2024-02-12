@@ -28,13 +28,31 @@ export function activate(context: vscode.ExtensionContext) {
           editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
 
           // fadeOutDecoration(editor, range)
-          blinkingDecoration(editor, range)
+          // blinkingDecoration(editor, range)
+          disappearingDecoration(editor, range)
         }
       }
     )
   )
 
   context.subscriptions.push(...disposables)
+}
+
+const disappearingDecoration = (
+  editor: vscode.TextEditor,
+  range: vscode.Range,
+  timeToDisappear = 1000
+): void => {
+  const decoration = vscode.window.createTextEditorDecorationType({
+    isWholeLine: true,
+    backgroundColor: `rgba(100, 30, 255, 1.0)`,
+  })
+
+  editor.setDecorations(decoration, [range])
+
+  setTimeout(() => {
+    decoration?.dispose()
+  }, timeToDisappear)
 }
 
 const fadeOutDecoration = (
