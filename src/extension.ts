@@ -26,10 +26,40 @@ export function activate(context: vscode.ExtensionContext) {
 
           editor.selection = new vscode.Selection(range.start, range.end)
           editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
+
+          fadeOutDecoration(editor, range)
         }
       }
     )
   )
 
   context.subscriptions.push(...disposables)
+}
+
+const fadeOutDecoration = (
+  editor: vscode.TextEditor,
+  range: vscode.Range
+): void => {
+  let opacity = 0.5
+  let decoration: vscode.TextEditorDecorationType
+
+  const interval = setInterval((): void => {
+    opacity -= 0.01
+
+    if (opacity <= 0) {
+      decoration?.dispose()
+      clearInterval(interval)
+    } else {
+      console.log(opacity)
+
+      decoration?.dispose()
+
+      decoration = vscode.window.createTextEditorDecorationType({
+        isWholeLine: true,
+        backgroundColor: `rgba(100, 30, 255, ${opacity})`,
+      })
+
+      editor.setDecorations(decoration, [range])
+    }
+  }, 5)
 }
