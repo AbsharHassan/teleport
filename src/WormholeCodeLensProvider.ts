@@ -97,9 +97,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   ) {
     if (!this.inHistory) {
       codeLens.command = {
-        title: 'You came from line: ' + (this.lineHistoryArray[1]?.line + 1),
+        title:
+          '(add hotkeys) You came from line: ' +
+          (this.lineHistoryArray[1]?.line + 1),
         tooltip: 'Use this to navigate between your recent most changes',
-        command: 'teleport.showMessage',
+        command: 'teleport.teleportToWormhole',
         arguments: [this.lineHistoryArray[1]],
       }
     } else {
@@ -107,9 +109,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
         case 0:
           codeLens.command = {
             title:
-              'Go forward to line: ' +
+              '(add hotkeys) Go forward to line: ' +
               (this.lineHistoryArray[this.selectedHistoryIndex - 1].line + 1),
-            command: 'teleport.showMessage',
+            command: 'teleport.teleportToWormhole',
             arguments: [this.lineHistoryArray[this.selectedHistoryIndex - 1]],
           }
           break
@@ -118,11 +120,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
             title:
               `${
                 this.selectedHistoryIndex > 0
-                  ? 'Go even further back to line: '
-                  : 'You came from line: '
+                  ? '(add hotkeys) Go even further back to line: '
+                  : '(add hotkeys) You came from line: '
               }` +
               (this.lineHistoryArray[this.selectedHistoryIndex + 1].line + 1),
-            command: 'teleport.showMessage',
+            command: 'teleport.teleportToWormhole',
             arguments: [this.lineHistoryArray[this.selectedHistoryIndex + 1]],
           }
       }

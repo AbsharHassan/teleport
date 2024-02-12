@@ -16,8 +16,8 @@
   "contributes": {
     "commands": [
       {
-        "title": "Show Message",
-        "command": "teleport.showMessage"
+        "title": "Teleport",
+        "command": "teleport.teleportToWormhole"
       }
     ],
     "configuration": {
