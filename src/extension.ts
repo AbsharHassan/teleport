@@ -27,7 +27,8 @@ export function activate(context: vscode.ExtensionContext) {
           editor.selection = new vscode.Selection(range.start, range.end)
           editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
 
-          fadeOutDecoration(editor, range)
+          // fadeOutDecoration(editor, range)
+          blinkingDecoration(editor, range)
         }
       }
     )
@@ -62,4 +63,34 @@ const fadeOutDecoration = (
       editor.setDecorations(decoration, [range])
     }
   }, 5)
+}
+
+const blinkingDecoration = (
+  editor: vscode.TextEditor,
+  range: vscode.Range,
+  blinkCount = 10,
+  blinkGap = 1000
+): void => {
+  let count = blinkCount
+  let decoration: vscode.TextEditorDecorationType
+
+  const interval = setInterval((): void => {
+    count--
+
+    if (count <= 0) {
+      decoration?.dispose()
+      clearInterval(interval)
+    } else {
+      decoration?.dispose()
+
+      if (count % 2 !== 0) {
+        decoration = vscode.window.createTextEditorDecorationType({
+          isWholeLine: true,
+          backgroundColor: `rgba(100, 30, 255, 1.0)`,
+        })
+
+        editor.setDecorations(decoration, [range])
+      }
+    }
+  }, blinkGap)
 }
