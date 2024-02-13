@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
         const editor = vscode.window.activeTextEditor
 
         if (editor) {
-          const line = args[0].line
+          const line = args[0]
           const character = Number.MAX_VALUE
           const range = new vscode.Range(line, character, line, character)
 
