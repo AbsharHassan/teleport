@@ -6,3 +6,5 @@ node_modules
 ideas.txt
 
 WormholeCodeLensProvider_dep.ts
+
+WormholeCodeLensProvider_click-based-(dep).ts
