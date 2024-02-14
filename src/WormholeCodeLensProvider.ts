@@ -1,133 +1,169 @@
 import * as vscode from 'vscode'
 
+// flow: store the line where there was a change and when a line is selected, navigate to that line. Add a delay when typing the new line or perhaps wait until the user navigates away and then remove the codelens
+
 export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
-  constructor(wormholeCount = 4) {
-    this.wormholeCount = wormholeCount
-
-    const dummyPosition = new vscode.Position(0, 0)
-
-    for (let i = 0; i < wormholeCount; i++) {
-      this.lineHistoryArray[i] = dummyPosition
-    }
-
-    vscode.window.onDidChangeTextEditorSelection((event) => {
-      const currentLine = new vscode.Position(
-        event.selections[0].active.line,
-        0
-      )
-
-      const currentLineHistoryIndex = this.lineHistoryArray.findIndex(
-        (position) => {
-          return position.line === currentLine.line
-        }
-      )
-
-      if (currentLineHistoryIndex > -1) {
-        this.selectedHistoryIndex = currentLineHistoryIndex
-        this.cursor = this.lineHistoryArray[currentLineHistoryIndex]
-        this.inHistory = true
-      } else {
-        this.inHistory = false
-
-        // update the history
-        for (let i = this.lineHistoryArray.length - 1; i > 0; i--) {
-          this.lineHistoryArray[i] = this.lineHistoryArray[i - 1]
-        }
-
-        this.lineHistoryArray[0] = new vscode.Position(
-          event.selections[0].active.line,
-          0
-        )
-        this.cursor = this.lineHistoryArray[0]
-      }
-
-      // this.lineHistoryArray.map((point, index) => {
-      //   console.log(`${index}: ` + point.line)
-      // })
-
-      this._onDidChangeCodeLenses.fire()
-    })
-  }
-
-  private wormholeCount: number = 4
-  private cursor: vscode.Position = new vscode.Position(0, 0)
-  private selectedHistoryIndex: number = 1
-  private lineHistoryArray: vscode.Position[] = []
-
-  public inHistory: boolean = false
-
-  private codeLenses: vscode.CodeLens[] = []
-
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> =
     new vscode.EventEmitter<void>()
   public readonly onDidChangeCodeLenses: vscode.Event<void> =
     this._onDidChangeCodeLenses.event
 
+  private updateWorkingHistory = (currentLine: number) => {
+    console.log('from the debouncer:  ' + currentLine)
+
+    const inHistoryIndex = this.workingLinesHistoryArray.findIndex(
+      (line) => line === currentLine
+    )
+
+    if (inHistoryIndex > -1) {
+      this.workingLinesHistoryArray.splice(inHistoryIndex, 1)
+      this.workingLinesHistoryArray.unshift(currentLine)
+    } else {
+      for (let i = this.workingLinesHistoryArray.length - 1; i > 0; i--) {
+        this.workingLinesHistoryArray[i] = this.workingLinesHistoryArray[i - 1]
+      }
+
+      this.workingLinesHistoryArray[0] = currentLine
+      // event.contentChanges[0].range.start.line
+    }
+
+    // console.log(this.workingLinesHistoryArray)
+
+    this.updateDecorations()
+  }
+
+  private debouncingFunc = (cb: any, delay = 1000) => {
+    let timeout: any
+
+    return (...args: any) => {
+      clearTimeout(timeout)
+
+      timeout = setTimeout(() => {
+        cb(...args)
+      }, delay)
+    }
+  }
+
+  private debouncedUpdateWorkingHistory = this.debouncingFunc(
+    this.updateWorkingHistory
+  )
+
+  private wormholeCount = 4
+  private codeLenses: vscode.CodeLens[] = []
+  private workingLine: number = -1
+  private workingLinesHistoryArray: number[] = []
+  private showCodeLenses = false
+  private codeLensLine: number = 0
+  private prevWorkingLine = -1
+
+  private decorationsTest: vscode.TextEditorDecorationType[] = []
+  private updateDecorations = () => {
+    const editor = vscode.window.activeTextEditor
+
+    this.decorationsTest.forEach((decoration) => {
+      decoration.dispose()
+    })
+
+    this.workingLinesHistoryArray.map((line, index) => {
+      const range = new vscode.Range(line, 0, line, 0)
+
+      const opacity = 1 / (index + 1)
+
+      const decoration = vscode.window.createTextEditorDecorationType({
+        isWholeLine: true,
+        backgroundColor: `rgba(100, 30, 255, ${opacity})`,
+      })
+
+      this.decorationsTest[index] = decoration
+
+      editor?.setDecorations(decoration, [range])
+    })
+  }
+
+  constructor(wormholeCount = 4) {
+    this.wormholeCount = wormholeCount
+    for (let i = 0; i < wormholeCount; i++) {
+      this.workingLinesHistoryArray[i] = -1
+    }
+
+    // const updateWorkingStuff = debouncingFunc((currentLine: number) => {
+    //   console.log('from the debouncer:  ' + currentLine)
+
+    //   const inHistoryIndex = this.workingLinesHistoryArray.findIndex(
+    //     (line) => line === currentLine
+    //   )
+
+    //   if (inHistoryIndex > -1) {
+    //     this.workingLinesHistoryArray.splice(inHistoryIndex, 1)
+    //     this.workingLinesHistoryArray.unshift(currentLine)
+    //   } else {
+    //     for (let i = this.workingLinesHistoryArray.length - 1; i > 0; i--) {
+    //       this.workingLinesHistoryArray[i] =
+    //         this.workingLinesHistoryArray[i - 1]
+    //     }
+
+    //     this.workingLinesHistoryArray[0] = currentLine
+    //     // event.contentChanges[0].range.start.line
+    //   }
+
+    //   // console.log(this.workingLinesHistoryArray)
+
+    //   updateDecorations()
+    // })
+
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      const currentLine = event.contentChanges[0].range.start.line
+
+      if (this.prevWorkingLine > -1 && this.prevWorkingLine !== currentLine) {
+        this.updateWorkingHistory(currentLine)
+      } else {
+        this.debouncedUpdateWorkingHistory(currentLine)
+      }
+
+      this.prevWorkingLine = currentLine
+    })
+
+    vscode.window.onDidChangeTextEditorSelection((event) => {
+      const currentLine = event.selections[0].start.line
+
+      if (this.workingLine > -1 && currentLine !== this.workingLine) {
+        this.codeLensLine = currentLine
+        this.showCodeLenses = true
+      } else {
+        this.showCodeLenses = false
+      }
+
+      // this._onDidChangeCodeLenses.fire()
+    })
+  }
+
   public provideCodeLenses(
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
-    this.codeLenses = []
+    if (this.showCodeLenses) {
+      this.codeLenses = []
 
-    let range = new vscode.Range(this.cursor, this.cursor)
+      let range = new vscode.Range(this.codeLensLine, 0, this.codeLensLine, 0)
 
-    if (this.inHistory) {
-      if (this.selectedHistoryIndex + 1 < this.wormholeCount) {
-        let rangePlusOne = new vscode.Range(
-          this.cursor.line,
-          1,
-          this.cursor.line,
-          1
-        )
-        this.codeLenses.push(new vscode.CodeLens(range))
-        this.codeLenses.push(new vscode.CodeLens(rangePlusOne))
-      } else {
-        this.codeLenses.push(new vscode.CodeLens(range))
-      }
-    } else {
       this.codeLenses.push(new vscode.CodeLens(range))
+
+      return this.codeLenses
     }
 
-    return this.codeLenses
+    return []
   }
 
   public resolveCodeLens(
     codeLens: vscode.CodeLens,
     token: vscode.CancellationToken
   ) {
-    if (!this.inHistory) {
-      codeLens.command = {
-        title:
-          '(add hotkeys) You came from line: ' +
-          (this.lineHistoryArray[1]?.line + 1),
-        tooltip: 'Use this to navigate between your recent most changes',
-        command: 'teleport.teleportToWormhole',
-        arguments: [this.lineHistoryArray[1]],
-      }
-    } else {
-      switch (codeLens.range.start.character) {
-        case 0:
-          codeLens.command = {
-            title:
-              '(add hotkeys) Go forward to line: ' +
-              (this.lineHistoryArray[this.selectedHistoryIndex - 1].line + 1),
-            command: 'teleport.teleportToWormhole',
-            arguments: [this.lineHistoryArray[this.selectedHistoryIndex - 1]],
-          }
-          break
-        case 1:
-          codeLens.command = {
-            title:
-              `${
-                this.selectedHistoryIndex > 0
-                  ? '(add hotkeys) Go even further back to line: '
-                  : '(add hotkeys) You came from line: '
-              }` +
-              (this.lineHistoryArray[this.selectedHistoryIndex + 1].line + 1),
-            command: 'teleport.teleportToWormhole',
-            arguments: [this.lineHistoryArray[this.selectedHistoryIndex + 1]],
-          }
-      }
+    codeLens.command = {
+      title:
+        'so much for the past 3 weeks lmao kill yourself, also you were working on ' +
+        (this.workingLine + 1),
+      command: 'teleport.teleportToWormhole',
+      arguments: [this.workingLine],
     }
 
     return codeLens
