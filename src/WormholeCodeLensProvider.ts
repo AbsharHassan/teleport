@@ -16,7 +16,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       i < currentLine + this.linesFromFirstChange;
       i++
     ) {
-      if (this.workingLinesHistoryArray.includes(i)) {
+      // if (this.workingLinesHistoryArray.includes(i)) {
+      //   shouldIgnoreChange = true
+      //   break
+      // }
+      if (this.workingLinesHistoryArray[0] === i) {
         shouldIgnoreChange = true
         break
       }
@@ -32,7 +36,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       ) {
         console.log(i)
 
-        if (this.workingLinesHistoryArray.includes(i)) {
+        // if (this.workingLinesHistoryArray.includes(i)) {
+        //   shouldIgnoreChange = true
+        //   break
+        // }
+        if (this.workingLinesHistoryArray[0] === i) {
           shouldIgnoreChange = true
           break
         }
