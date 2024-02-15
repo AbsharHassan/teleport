@@ -11,35 +11,39 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private updateWorkingHistory = (currentLine: number) => {
     let shouldIgnoreChange = false
 
-    // for (
-    //   let i = currentLine;
-    //   i < currentLine + this.linesFromFirstChange;
-    //   i++
-    // ) {
-    //   // console.log(i)
+    for (
+      let i = currentLine;
+      i < currentLine + this.linesFromFirstChange;
+      i++
+    ) {
+      if (this.workingLinesHistoryArray.includes(i)) {
+        shouldIgnoreChange = true
+        break
+      }
+    }
 
-    //   if (this.workingLinesHistoryArray.includes(i)) {
-    //     shouldIgnoreChange = true
-    //     break
-    //   }
-    // }
+    console.log('pain:  ' + shouldIgnoreChange)
 
-    // if (shouldIgnoreChange === false) {
-    //   for (
-    //     let i = currentLine;
-    //     i < currentLine - this.linesFromFirstChange;
-    //     i--
-    //   ) {
-    //     // console.log(i)
+    if (shouldIgnoreChange === false) {
+      for (
+        let i = currentLine;
+        i > currentLine - this.linesFromFirstChange && i >= 0;
+        i--
+      ) {
+        console.log(i)
 
-    //     if (this.workingLinesHistoryArray.includes(i)) {
-    //       shouldIgnoreChange = true
-    //       break
-    //     }
-    //   }
-    // }
+        if (this.workingLinesHistoryArray.includes(i)) {
+          shouldIgnoreChange = true
+          break
+        }
+      }
+    }
 
-    // console.log(shouldIgnoreChange)
+    console.log({ shouldIgnoreChange })
+
+    if (shouldIgnoreChange) {
+      return
+    }
 
     const inHistoryIndex = this.workingLinesHistoryArray.findIndex(
       (line) => line === currentLine
@@ -76,7 +80,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   )
 
   private wormholeCount = 4
-  private linesFromFirstChange = 3
+  private linesFromFirstChange = 10
   private codeLenses: vscode.CodeLens[] = []
   private workingLine: number = -1
   private workingLinesHistoryArray: number[] = []
@@ -86,17 +90,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
   private decorationsTest: vscode.TextEditorDecorationType[] = []
   private updateDecorations = () => {
-    console.log('is this even being called?')
-
     const editor = vscode.window.activeTextEditor
 
     this.decorationsTest.forEach((decoration) => {
       decoration.dispose()
     })
-
-    // console.log('on line 97')
-
-    console.log(this.workingLinesHistoryArray)
 
     this.workingLinesHistoryArray.map((line, index) => {
       if (line > -1) {
@@ -106,7 +104,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
         const decoration = vscode.window.createTextEditorDecorationType({
           isWholeLine: true,
-          backgroundColor: `rgba(0, 0, 0, ${opacity})`,
+          backgroundColor: `rgba(255, 0, 0, ${opacity})`,
         })
 
         this.decorationsTest[index] = decoration
@@ -114,9 +112,6 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
         editor?.setDecorations(decoration, [range])
       }
     })
-
-    // program starts working properly if there is only 1 valid entry in the workingLines array or if all 4 entries are valid
-    console.log('leaving update decorations')
   }
 
   constructor(wormholeCount = 4) {
