@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 
-// flow: store the line where there was a change and when a line is selected, navigate to that line. Add a delay when typing the new line or perhaps wait until the user navigates away and then remove the codelens
+// flow: store the line where there was a change and when a line is selected, navigate to that line. Add a delay when typing the new line or perhaps wait until the user navigates away and then remove the codelens. Starting with a simple approach to grouping changes
 
 export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> =
@@ -9,7 +9,37 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     this._onDidChangeCodeLenses.event
 
   private updateWorkingHistory = (currentLine: number) => {
-    console.log('from the debouncer:  ' + currentLine)
+    let shouldIgnoreChange = false
+
+    // for (
+    //   let i = currentLine;
+    //   i < currentLine + this.linesFromFirstChange;
+    //   i++
+    // ) {
+    //   // console.log(i)
+
+    //   if (this.workingLinesHistoryArray.includes(i)) {
+    //     shouldIgnoreChange = true
+    //     break
+    //   }
+    // }
+
+    // if (shouldIgnoreChange === false) {
+    //   for (
+    //     let i = currentLine;
+    //     i < currentLine - this.linesFromFirstChange;
+    //     i--
+    //   ) {
+    //     // console.log(i)
+
+    //     if (this.workingLinesHistoryArray.includes(i)) {
+    //       shouldIgnoreChange = true
+    //       break
+    //     }
+    //   }
+    // }
+
+    // console.log(shouldIgnoreChange)
 
     const inHistoryIndex = this.workingLinesHistoryArray.findIndex(
       (line) => line === currentLine
@@ -24,10 +54,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       }
 
       this.workingLinesHistoryArray[0] = currentLine
-      // event.contentChanges[0].range.start.line
     }
-
-    // console.log(this.workingLinesHistoryArray)
 
     this.updateDecorations()
   }
@@ -49,6 +76,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   )
 
   private wormholeCount = 4
+  private linesFromFirstChange = 3
   private codeLenses: vscode.CodeLens[] = []
   private workingLine: number = -1
   private workingLinesHistoryArray: number[] = []
@@ -58,26 +86,37 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
   private decorationsTest: vscode.TextEditorDecorationType[] = []
   private updateDecorations = () => {
+    console.log('is this even being called?')
+
     const editor = vscode.window.activeTextEditor
 
     this.decorationsTest.forEach((decoration) => {
       decoration.dispose()
     })
 
+    // console.log('on line 97')
+
+    console.log(this.workingLinesHistoryArray)
+
     this.workingLinesHistoryArray.map((line, index) => {
-      const range = new vscode.Range(line, 0, line, 0)
+      if (line > -1) {
+        const range = new vscode.Range(line, 0, line, 0)
 
-      const opacity = 1 / (index + 1)
+        const opacity = 1 / (index + 1)
 
-      const decoration = vscode.window.createTextEditorDecorationType({
-        isWholeLine: true,
-        backgroundColor: `rgba(100, 30, 255, ${opacity})`,
-      })
+        const decoration = vscode.window.createTextEditorDecorationType({
+          isWholeLine: true,
+          backgroundColor: `rgba(0, 0, 0, ${opacity})`,
+        })
 
-      this.decorationsTest[index] = decoration
+        this.decorationsTest[index] = decoration
 
-      editor?.setDecorations(decoration, [range])
+        editor?.setDecorations(decoration, [range])
+      }
     })
+
+    // program starts working properly if there is only 1 valid entry in the workingLines array or if all 4 entries are valid
+    console.log('leaving update decorations')
   }
 
   constructor(wormholeCount = 4) {
@@ -86,39 +125,19 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       this.workingLinesHistoryArray[i] = -1
     }
 
-    // const updateWorkingStuff = debouncingFunc((currentLine: number) => {
-    //   console.log('from the debouncer:  ' + currentLine)
-
-    //   const inHistoryIndex = this.workingLinesHistoryArray.findIndex(
-    //     (line) => line === currentLine
-    //   )
-
-    //   if (inHistoryIndex > -1) {
-    //     this.workingLinesHistoryArray.splice(inHistoryIndex, 1)
-    //     this.workingLinesHistoryArray.unshift(currentLine)
-    //   } else {
-    //     for (let i = this.workingLinesHistoryArray.length - 1; i > 0; i--) {
-    //       this.workingLinesHistoryArray[i] =
-    //         this.workingLinesHistoryArray[i - 1]
-    //     }
-
-    //     this.workingLinesHistoryArray[0] = currentLine
-    //     // event.contentChanges[0].range.start.line
-    //   }
-
-    //   // console.log(this.workingLinesHistoryArray)
-
-    //   updateDecorations()
-    // })
-
     vscode.workspace.onDidChangeTextDocument((event) => {
       const currentLine = event.contentChanges[0].range.start.line
 
       if (this.prevWorkingLine > -1 && this.prevWorkingLine !== currentLine) {
+        // console.log('is this being called?')
         this.updateWorkingHistory(currentLine)
       } else {
         this.debouncedUpdateWorkingHistory(currentLine)
       }
+
+      // this code isnt being reached
+      // console.log('current:   ' + currentLine)
+      // console.log('prev:      ' + this.prevWorkingLine)
 
       this.prevWorkingLine = currentLine
     })
