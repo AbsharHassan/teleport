@@ -10,7 +10,8 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
   private updateWorkingHistory = (currentLine: number) => {
     const newRange = new vscode.Range(
-      currentLine - this.linesFromFirstChange,
+      // this is done to prevent -ve values for range start
+      Math.max(currentLine - this.linesFromFirstChange, 0),
       0,
       currentLine + this.linesFromFirstChange,
       0
