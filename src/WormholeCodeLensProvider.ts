@@ -9,69 +9,126 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     this._onDidChangeCodeLenses.event
 
   private updateWorkingHistory = (currentLine: number) => {
+    const newRange = new vscode.Range(
+      currentLine - this.linesFromFirstChange,
+      0,
+      currentLine + this.linesFromFirstChange,
+      0
+    )
+
     let shouldIgnoreChange = false
 
-    for (
-      let i = currentLine;
-      i < currentLine + this.linesFromFirstChange;
-      i++
-    ) {
-      // if (this.workingLinesHistoryArray.includes(i)) {
-      //   shouldIgnoreChange = true
-      //   break
-      // }
-      if (this.workingLinesHistoryArray[0] === i) {
+    // for-loop chosen instead of .map() in order to incorporate break operator, since .intersetion() method may be costly
+    for (let i = 0; i < this.changesRangesHistoryArray.length; i++) {
+      const intersects = this.changesRangesHistoryArray[i]?.intersection(
+        newRange
+      )
+        ? true
+        : false
+      if (intersects) {
         shouldIgnoreChange = true
         break
       }
     }
 
-    console.log('pain:  ' + shouldIgnoreChange)
-
-    if (shouldIgnoreChange === false) {
-      for (
-        let i = currentLine;
-        i > currentLine - this.linesFromFirstChange && i >= 0;
-        i--
-      ) {
-        console.log(i)
-
-        // if (this.workingLinesHistoryArray.includes(i)) {
-        //   shouldIgnoreChange = true
-        //   break
-        // }
-        if (this.workingLinesHistoryArray[0] === i) {
-          shouldIgnoreChange = true
-          break
-        }
-      }
-    }
-
-    console.log({ shouldIgnoreChange })
-
     if (shouldIgnoreChange) {
+      console.log('starting')
+
+      this.changesRangesHistoryArray.map((range) => {
+        console.log({ start: range?.start.line, end: range?.end.line })
+      })
+
+      console.log('ending')
       return
     }
 
-    const inHistoryIndex = this.workingLinesHistoryArray.findIndex(
-      (line) => line === currentLine
-    )
+    let inRangeHistoryIndex = -1
 
-    if (inHistoryIndex > -1) {
-      this.workingLinesHistoryArray.splice(inHistoryIndex, 1)
-      this.workingLinesHistoryArray.unshift(currentLine)
-    } else {
-      for (let i = this.workingLinesHistoryArray.length - 1; i > 0; i--) {
-        this.workingLinesHistoryArray[i] = this.workingLinesHistoryArray[i - 1]
+    // for-loop chosen instead of .map() in order to incorporate break operator, since .contains() method may be costly
+    for (let i = 0; i < this.changesRangesHistoryArray.length; i++) {
+      const contains = this.changesRangesHistoryArray[i]?.contains(newRange)
+      if (contains) {
+        inRangeHistoryIndex = i
+        break
       }
-
-      this.workingLinesHistoryArray[0] = currentLine
     }
 
-    this.updateDecorations()
+    if (inRangeHistoryIndex > -1) {
+      this.changesRangesHistoryArray.splice(inRangeHistoryIndex, 1)
+      this.changesRangesHistoryArray.unshift(newRange)
+    } else {
+      for (let i = this.changesRangesHistoryArray.length - 1; i > 0; i--) {
+        this.changesRangesHistoryArray[i] =
+          this.changesRangesHistoryArray[i - 1]
+      }
+
+      this.changesRangesHistoryArray[0] = newRange
+    }
+
+    console.log('starting')
+
+    this.changesRangesHistoryArray.map((range) => {
+      console.log({ start: range?.start.line, end: range?.end.line })
+    })
+
+    console.log('ending')
+
+    // approach with only lines//
+    // approach with only lines//
+    // approach with only lines//
+    // approach with only lines//
+    // approach with only lines//
+    // approach with only lines//
+
+    // let shouldIgnoreChange = false
+
+    // for (
+    //   let i = currentLine;
+    //   i < currentLine + this.linesFromFirstChange;
+    //   i++
+    // ) {
+    //   if (this.workingLinesHistoryArray[0] === i) {
+    //     shouldIgnoreChange = true
+    //     break
+    //   }
+    // }
+
+    // if (shouldIgnoreChange === false) {
+    //   for (
+    //     let i = currentLine;
+    //     i > currentLine - this.linesFromFirstChange && i >= 0;
+    //     i--
+    //   ) {
+    //     if (this.workingLinesHistoryArray[0] === i) {
+    //       shouldIgnoreChange = true
+    //       break
+    //     }
+    //   }
+    // }
+
+    // if (shouldIgnoreChange) {
+    //   return
+    // }
+
+    // const inHistoryIndex = this.workingLinesHistoryArray.findIndex(
+    //   (line) => line === currentLine
+    // )
+
+    // if (inHistoryIndex > -1) {
+    //   this.workingLinesHistoryArray.splice(inHistoryIndex, 1)
+    //   this.workingLinesHistoryArray.unshift(currentLine)
+    // } else {
+    //   for (let i = this.workingLinesHistoryArray.length - 1; i > 0; i--) {
+    //     this.workingLinesHistoryArray[i] = this.workingLinesHistoryArray[i - 1]
+    //   }
+
+    //   this.workingLinesHistoryArray[0] = currentLine
+    // }
+
+    // // this.updateDecorations()
   }
 
-  private debouncingFunc = (cb: any, delay = 1000) => {
+  private debouncingFunc = (cb: any, delay = 100) => {
     let timeout: any
 
     return (...args: any) => {
@@ -88,10 +145,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   )
 
   private wormholeCount = 4
-  private linesFromFirstChange = 10
+  private linesFromFirstChange = 3
   private codeLenses: vscode.CodeLens[] = []
   private workingLine: number = -1
   private workingLinesHistoryArray: number[] = []
+  private changesRangesHistoryArray: (vscode.Range | undefined)[] = []
   private showCodeLenses = false
   private codeLensLine: number = 0
   private prevWorkingLine = -1
@@ -108,11 +166,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       if (line > -1) {
         const range = new vscode.Range(line, 0, line, 0)
 
-        const opacity = 1 / (index + 1)
+        const opacity = 0.6 / (index + 1)
 
         const decoration = vscode.window.createTextEditorDecorationType({
           isWholeLine: true,
-          backgroundColor: `rgba(255, 0, 0, ${opacity})`,
+          backgroundColor: `rgba(153, 128, 250, ${opacity})`,
         })
 
         this.decorationsTest[index] = decoration
@@ -128,19 +186,19 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       this.workingLinesHistoryArray[i] = -1
     }
 
+    for (let i = 0; i < wormholeCount; i++) {
+      this.changesRangesHistoryArray[i] = undefined
+    }
+
     vscode.workspace.onDidChangeTextDocument((event) => {
       const currentLine = event.contentChanges[0].range.start.line
 
+      // maybe i dont even need to debounce the function and infact only check if the lines are different
       if (this.prevWorkingLine > -1 && this.prevWorkingLine !== currentLine) {
-        // console.log('is this being called?')
         this.updateWorkingHistory(currentLine)
       } else {
         this.debouncedUpdateWorkingHistory(currentLine)
       }
-
-      // this code isnt being reached
-      // console.log('current:   ' + currentLine)
-      // console.log('prev:      ' + this.prevWorkingLine)
 
       this.prevWorkingLine = currentLine
     })
@@ -148,12 +206,8 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     vscode.window.onDidChangeTextEditorSelection((event) => {
       const currentLine = event.selections[0].start.line
 
-      if (this.workingLine > -1 && currentLine !== this.workingLine) {
-        this.codeLensLine = currentLine
-        this.showCodeLenses = true
-      } else {
-        this.showCodeLenses = false
-      }
+      this.codeLensLine = currentLine
+      // this.showCodeLenses = true
 
       // this._onDidChangeCodeLenses.fire()
     })
@@ -183,9 +237,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     codeLens.command = {
       title:
         'so much for the past 3 weeks lmao kill yourself, also you were working on ' +
-        (this.workingLine + 1),
+        (this.workingLinesHistoryArray[1] + 1),
       command: 'teleport.teleportToWormhole',
-      arguments: [this.workingLine],
+      arguments: [this.workingLinesHistoryArray[1]],
     }
 
     return codeLens
