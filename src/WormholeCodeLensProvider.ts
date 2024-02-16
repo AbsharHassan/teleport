@@ -19,17 +19,22 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
     let shouldIgnoreChange = false
 
-    // for-loop chosen instead of .map() in order to incorporate break operator, since .intersetion() method may be costly
-    for (let i = 0; i < this.changesRangesHistoryArray.length; i++) {
-      const intersects = this.changesRangesHistoryArray[i]?.intersection(
-        newRange
-      )
-        ? true
-        : false
-      if (intersects) {
-        shouldIgnoreChange = true
-        break
-      }
+    // // for-loop chosen instead of .map() in order to incorporate break operator, since .intersetion() method may be costly
+    // for (let i = 0; i < this.changesRangesHistoryArray.length; i++) {
+    //   const intersects = this.changesRangesHistoryArray[i]?.intersection(
+    //     newRange
+    //   )
+    //     ? true
+    //     : false
+    //   if (intersects) {
+    //     shouldIgnoreChange = true
+    //     break
+    //   }
+    // }
+
+    // only to check the recent most change
+    if (this.changesRangesHistoryArray[0]?.intersection(newRange)) {
+      shouldIgnoreChange = true
     }
 
     if (shouldIgnoreChange) {
