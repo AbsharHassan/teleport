@@ -37,16 +37,16 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       shouldIgnoreChange = true
     }
 
-    if (shouldIgnoreChange) {
-      console.log('starting')
+    // if (shouldIgnoreChange) {
+    //   // console.log('starting')
 
-      this.changesRangesHistoryArray.map((range) => {
-        console.log({ start: range?.start.line, end: range?.end.line })
-      })
+    //   // this.changesRangesHistoryArray.map((range) => {
+    //   //   console.log({ start: range?.start.line, end: range?.end.line })
+    //   // })
 
-      console.log('ending')
-      return
-    }
+    //   // console.log('ending')
+    //   return
+    // }
 
     let inRangeHistoryIndex = -1
 
@@ -70,68 +70,6 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
       this.changesRangesHistoryArray[0] = newRange
     }
-
-    console.log('starting')
-
-    this.changesRangesHistoryArray.map((range) => {
-      console.log({ start: range?.start.line, end: range?.end.line })
-    })
-
-    console.log('ending')
-
-    // approach with only lines//
-    // approach with only lines//
-    // approach with only lines//
-    // approach with only lines//
-    // approach with only lines//
-    // approach with only lines//
-
-    // let shouldIgnoreChange = false
-
-    // for (
-    //   let i = currentLine;
-    //   i < currentLine + this.linesFromFirstChange;
-    //   i++
-    // ) {
-    //   if (this.workingLinesHistoryArray[0] === i) {
-    //     shouldIgnoreChange = true
-    //     break
-    //   }
-    // }
-
-    // if (shouldIgnoreChange === false) {
-    //   for (
-    //     let i = currentLine;
-    //     i > currentLine - this.linesFromFirstChange && i >= 0;
-    //     i--
-    //   ) {
-    //     if (this.workingLinesHistoryArray[0] === i) {
-    //       shouldIgnoreChange = true
-    //       break
-    //     }
-    //   }
-    // }
-
-    // if (shouldIgnoreChange) {
-    //   return
-    // }
-
-    // const inHistoryIndex = this.workingLinesHistoryArray.findIndex(
-    //   (line) => line === currentLine
-    // )
-
-    // if (inHistoryIndex > -1) {
-    //   this.workingLinesHistoryArray.splice(inHistoryIndex, 1)
-    //   this.workingLinesHistoryArray.unshift(currentLine)
-    // } else {
-    //   for (let i = this.workingLinesHistoryArray.length - 1; i > 0; i--) {
-    //     this.workingLinesHistoryArray[i] = this.workingLinesHistoryArray[i - 1]
-    //   }
-
-    //   this.workingLinesHistoryArray[0] = currentLine
-    // }
-
-    // // this.updateDecorations()
   }
 
   private debouncingFunc = (cb: any, delay = 100) => {
@@ -161,30 +99,6 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private prevWorkingLine = -1
 
   private decorationsTest: vscode.TextEditorDecorationType[] = []
-  private updateDecorations = () => {
-    const editor = vscode.window.activeTextEditor
-
-    this.decorationsTest.forEach((decoration) => {
-      decoration.dispose()
-    })
-
-    this.workingLinesHistoryArray.map((line, index) => {
-      if (line > -1) {
-        const range = new vscode.Range(line, 0, line, 0)
-
-        const opacity = 0.6 / (index + 1)
-
-        const decoration = vscode.window.createTextEditorDecorationType({
-          isWholeLine: true,
-          backgroundColor: `rgba(153, 128, 250, ${opacity})`,
-        })
-
-        this.decorationsTest[index] = decoration
-
-        editor?.setDecorations(decoration, [range])
-      }
-    })
-  }
 
   constructor(wormholeCount = 4) {
     this.wormholeCount = wormholeCount
@@ -213,9 +127,18 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       const currentLine = event.selections[0].start.line
 
       this.codeLensLine = currentLine
-      // this.showCodeLenses = true
+      this.showCodeLenses = false
 
-      // this._onDidChangeCodeLenses.fire()
+      this.changesRangesHistoryArray.map((range, index) => {
+        if (range?.contains(new vscode.Position(currentLine, 0))) {
+          console.log('in range' + index)
+
+          this.codeLensLine = range.start.line
+          this.showCodeLenses = true
+        }
+      })
+
+      this._onDidChangeCodeLenses.fire()
     })
   }
 
@@ -243,9 +166,14 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     codeLens.command = {
       title:
         'so much for the past 3 weeks lmao kill yourself, also you were working on ' +
-        (this.workingLinesHistoryArray[1] + 1),
+        //@ts-ignore
+        ((this.changesRangesHistoryArray[1]?.start.line +
+          //@ts-ignore
+          this.changesRangesHistoryArray[1]?.end.line) /
+          2 +
+          1),
       command: 'teleport.teleportToWormhole',
-      arguments: [this.workingLinesHistoryArray[1]],
+      arguments: [this.changesRangesHistoryArray[1]],
     }
 
     return codeLens
