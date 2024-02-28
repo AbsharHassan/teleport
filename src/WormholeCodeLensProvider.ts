@@ -101,6 +101,8 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
   private lineToAdd = -1
 
+  private oldLenses = false
+
   constructor(wormholeCount = 4) {
     this.wormholeCount = wormholeCount
     for (let i = 0; i < wormholeCount; i++) {
@@ -115,10 +117,10 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       const currentLine = event.contentChanges[0].range.start.line
 
       if (currentLine !== this.prevWorkingLine) {
-        // this.updateWorkingHistory(currentLine)
+        this.updateWorkingHistory(currentLine)
         // console.log('yeah hello i guess')
 
-        this.lineToAdd = currentLine
+        // this.lineToAdd = currentLine
 
         // console.log('starting')
 
@@ -138,25 +140,38 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       // console.log({ currentLine })
       // console.log(this.prevWorkingLine === currentLine)
 
-      if (this.lineToAdd > -1 && currentLine !== this.lineToAdd) {
-        this.updateWorkingHistory(this.lineToAdd)
-      }
+      // if (this.lineToAdd > -1 && currentLine !== this.lineToAdd) {
+      //   this.updateWorkingHistory(this.lineToAdd)
+      // }
 
-      console.log('starting')
-      this.changesRangesHistoryArray.map((range, index) => {
-        console.log(index + ': ' + range?.start.line)
-      })
-      console.log('ending')
+      // console.log('starting')
+      // this.changesRangesHistoryArray.map((range, index) => {
+      //   console.log(index + ': ' + range?.start.line)
+      // })
+      // console.log('ending')
 
-      if (
-        this.prevSelectionLine === -1 ||
-        this.prevSelectionLine === currentLine
-      ) {
-        this.prevSelectionLine = currentLine
+      console.log(currentLine)
+
+      console.log(this.changesRangesHistoryArray[0]?.start.line)
+
+      console.log(currentLine === this.changesRangesHistoryArray[0]?.start.line)
+
+      if (currentLine === this.changesRangesHistoryArray[0]?.start.line) {
+        this.oldLenses = true
         return
       }
+      this.oldLenses = false
 
-      // console.log('we came here')
+      // if (
+      //   this.prevSelectionLine === -1 ||
+      //   this.prevSelectionLine === currentLine ||
+      //   currentLine === this.changesRangesHistoryArray[0]?.start.line
+      // ) {
+      //   this.prevSelectionLine = currentLine
+      //   return
+      // }
+
+      console.log('we came here')
 
       this.codeLensLine = currentLine
       this.showCodeLenses = false
@@ -190,6 +205,12 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
+    console.log('provider')
+
+    if (this.oldLenses) {
+      return this.codeLenses
+    }
+
     if (this.showCodeLenses) {
       this.codeLenses = []
 
@@ -207,6 +228,8 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     codeLens: vscode.CodeLens,
     token: vscode.CancellationToken
   ) {
+    console.log('resolver')
+
     codeLens.command = {
       title:
         'so much for the past 3 weeks lmao kill yourself, also you were working on ' +
