@@ -89,7 +89,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   )
 
   private wormholeCount = 4
-  private linesFromFirstChange = 3
+  private linesFromFirstChange = 0
   private codeLenses: vscode.CodeLens[] = []
   private workingLine: number = -1
   private workingLinesHistoryArray: number[] = []
@@ -97,8 +97,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private showCodeLenses = false
   private codeLensLine: number = 0
   private prevWorkingLine = -1
+  private prevSelectionLine = -1
 
-  private decorationsTest: vscode.TextEditorDecorationType[] = []
+  private lineToAdd = -1
 
   constructor(wormholeCount = 4) {
     this.wormholeCount = wormholeCount
@@ -113,32 +114,75 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     vscode.workspace.onDidChangeTextDocument((event) => {
       const currentLine = event.contentChanges[0].range.start.line
 
-      // maybe i dont even need to debounce the function and infact only check if the lines are different
-      if (this.prevWorkingLine > -1 && this.prevWorkingLine !== currentLine) {
-        this.updateWorkingHistory(currentLine)
-      } else {
-        this.debouncedUpdateWorkingHistory(currentLine)
-      }
+      if (currentLine !== this.prevWorkingLine) {
+        // this.updateWorkingHistory(currentLine)
+        // console.log('yeah hello i guess')
 
-      this.prevWorkingLine = currentLine
+        this.lineToAdd = currentLine
+
+        // console.log('starting')
+
+        // this.changesRangesHistoryArray.map((range, index) => {
+        //   console.log(index + ': ' + range?.start.line)
+        // })
+        // console.log('ending')
+
+        this.prevWorkingLine = currentLine
+      }
     })
 
     vscode.window.onDidChangeTextEditorSelection((event) => {
       const currentLine = event.selections[0].start.line
 
+      // console.log({ prev: this.prevWorkingLine })
+      // console.log({ currentLine })
+      // console.log(this.prevWorkingLine === currentLine)
+
+      if (this.lineToAdd > -1 && currentLine !== this.lineToAdd) {
+        this.updateWorkingHistory(this.lineToAdd)
+      }
+
+      console.log('starting')
+      this.changesRangesHistoryArray.map((range, index) => {
+        console.log(index + ': ' + range?.start.line)
+      })
+      console.log('ending')
+
+      if (
+        this.prevSelectionLine === -1 ||
+        this.prevSelectionLine === currentLine
+      ) {
+        this.prevSelectionLine = currentLine
+        return
+      }
+
+      // console.log('we came here')
+
       this.codeLensLine = currentLine
       this.showCodeLenses = false
 
-      this.changesRangesHistoryArray.map((range, index) => {
-        if (range?.contains(new vscode.Position(currentLine, 0))) {
-          console.log('in range' + index)
+      // console.log('starting')
 
-          this.codeLensLine = range.start.line
-          this.showCodeLenses = true
-        }
-      })
+      // this.changesRangesHistoryArray.map((range, index) => {
+      //   console.log(index + ': ' + range?.start.line)
+      // })
+      // console.log('ending')
+
+      this.codeLensLine = currentLine
+      this.showCodeLenses = true
+
+      // this.changesRangesHistoryArray.map((range, index) => {
+      //   if (range?.contains(new vscode.Position(currentLine, 0))) {
+      //     console.log('in range ' + index)
+
+      //     this.codeLensLine = range.start.line
+      //     this.showCodeLenses = true
+      //   }
+      // })
 
       this._onDidChangeCodeLenses.fire()
+
+      this.prevSelectionLine = currentLine
     })
   }
 
@@ -167,11 +211,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       title:
         'so much for the past 3 weeks lmao kill yourself, also you were working on ' +
         //@ts-ignore
-        ((this.changesRangesHistoryArray[1]?.start.line +
-          //@ts-ignore
-          this.changesRangesHistoryArray[1]?.end.line) /
-          2 +
-          1),
+        (this.changesRangesHistoryArray[0]?.start.line + 1),
       command: 'teleport.teleportToWormhole',
       arguments: [this.changesRangesHistoryArray[1]],
     }
