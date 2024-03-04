@@ -99,6 +99,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     for (let i = 0; i < wormholeCount; i++) {
+      // this.changesRangesHistoryArray[i] = new vscode.Range(0, 0, 0, 0)
       this.changesRangesHistoryArray[i] = undefined
     }
 
@@ -208,11 +209,10 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     token: vscode.CancellationToken
   ) {
     if (!this.isBrowsingHistory) {
+      const line =
+        this.changesRangesHistoryArray[this.browsingIndex]?.start.line ?? NaN
       codeLens.command = {
-        title:
-          '(add hotkeys) You came from line: ' +
-          //@ts-ignore
-          (this.changesRangesHistoryArray[this.browsingIndex]?.start.line + 1),
+        title: '(add hotkeys) You came from line: ' + (line + 1),
         tooltip: 'Use this to navigate between your recent most changes',
         command: 'teleport.teleportToWormhole',
         arguments: [this.changesRangesHistoryArray[this.browsingIndex]],
@@ -220,18 +220,19 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     } else {
       switch (codeLens.range.start.character) {
         case 0:
+          const lineForward =
+            this.changesRangesHistoryArray[this.browsingIndex - 1]?.start
+              .line ?? NaN
           codeLens.command = {
-            title:
-              '(add hotkeys) Go forward to line: ' +
-              //@ts-ignore
-              (this.changesRangesHistoryArray[this.browsingIndex - 1]?.start
-                .line +
-                1),
+            title: '(add hotkeys) Go forward to line: ' + (lineForward + 1),
             command: 'teleport.teleportToWormhole',
             arguments: [this.changesRangesHistoryArray[this.browsingIndex - 1]],
           }
           break
         case 1:
+          const lineBackward =
+            this.changesRangesHistoryArray[this.browsingIndex + 1]?.start
+              .line ?? NaN
           codeLens.command = {
             title:
               `${
@@ -239,27 +240,14 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
                   ? '(add hotkeys) Go even further back to line: '
                   : '(add hotkeys) You came from line: '
               }` +
-              //@ts-ignore
-              (this.changesRangesHistoryArray[this.browsingIndex + 1]?.start
-                .line +
-                1),
+              (lineBackward + 1),
             command: 'teleport.teleportToWormhole',
             arguments: [this.changesRangesHistoryArray[this.browsingIndex + 1]],
           }
+          break
       }
     }
 
     return codeLens
-
-    // codeLens.command = {
-    //   title:
-    //     'you were working on: ' +
-    //     //@ts-ignore
-    //     (this.changesRangesHistoryArray[this.browsingIndex]?.start.line + 1),
-    //   command: 'teleport.teleportToWormhole',
-    //   arguments: [this.changesRangesHistoryArray[this.browsingIndex]],
-    // }
-
-    // return codeLens
   }
 }
