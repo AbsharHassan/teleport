@@ -87,7 +87,6 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private codeLensLine: number = 0
   private prevWorkingLine = -1
 
-  private shouldUpdateCodeLenses = false
   private browsingHistory = false
   // private browsingIndex
   private visibleIndex = 0
@@ -118,15 +117,10 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
       // To make sure the codeLens doesnt change while the user is currently working in the recentmost range
       if (currentLine === this.changesRangesHistoryArray[0]?.start.line) {
-        // console.log('i guess this is being called')
         this.visibleIndex = 1
-
-        // this.shouldUpdateCodeLenses = false
-        // return
       } else {
         this.visibleIndex = 0
       }
-
       this.shouldUpdateCodeLenses = true
       this.codeLensLine = currentLine
       this.showCodeLenses = true
@@ -139,11 +133,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
-    // console.log('provider')
-
-    if (!this.shouldUpdateCodeLenses) {
-      return this.codeLenses
-    }
+    console.log('provider')
 
     if (!this.showCodeLenses) {
       return []
@@ -165,21 +155,13 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     codeLens: vscode.CodeLens,
     token: vscode.CancellationToken
   ) {
-    // console.log('resolver')
-    console.log('visible: ' + this.visibleIndex)
-    console.log(
-      'painnnn:  ' +
-        this.changesRangesHistoryArray[this.visibleIndex]?.start.line
-    )
-    this.logHistory()
-
     codeLens.command = {
       title:
         'you were working on: ' +
         //@ts-ignore
         (this.changesRangesHistoryArray[this.visibleIndex]?.start.line + 1),
       command: 'teleport.teleportToWormhole',
-      arguments: [this.changesRangesHistoryArray[0]],
+      arguments: [this.changesRangesHistoryArray[this.visibleIndex]],
     }
 
     return codeLens
