@@ -35,6 +35,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     // only to check the recent most change
     if (this.changesRangesHistoryArray[0]?.intersection(newRange)) {
       shouldIgnoreChange = true
+      return
     }
 
     let inRangeHistoryIndex = -1
@@ -52,6 +53,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       this.changesRangesHistoryArray.splice(inRangeHistoryIndex, 1)
       this.changesRangesHistoryArray.unshift(newRange)
     } else {
+      // remove the last history element and shift all positions to accomodate the new value
       for (let i = this.changesRangesHistoryArray.length - 1; i > 0; i--) {
         this.changesRangesHistoryArray[i] =
           this.changesRangesHistoryArray[i - 1]
@@ -69,6 +71,13 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     console.log('ending')
   }
 
+  /**
+   * toggleBrowsingHistory
+   */
+  public toggleBrowsingHistory(value: boolean) {
+    this.browsingHistory = value
+  }
+
   private wormholeCount = 4
   private linesFromFirstChange = 0
   private codeLenses: vscode.CodeLens[] = []
@@ -79,6 +88,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private prevWorkingLine = -1
 
   private shouldUpdateCodeLenses = false
+  private browsingHistory = false
+  // private browsingIndex
+  private visibleIndex = 0
 
   constructor(wormholeCount = 4) {
     this.wormholeCount = wormholeCount
@@ -104,9 +116,15 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     vscode.window.onDidChangeTextEditorSelection((event) => {
       const currentLine = event.selections[0].start.line
 
+      // To make sure the codeLens doesnt change while the user is currently working in the recentmost range
       if (currentLine === this.changesRangesHistoryArray[0]?.start.line) {
-        this.shouldUpdateCodeLenses = false
-        return
+        // console.log('i guess this is being called')
+        this.visibleIndex = 1
+
+        // this.shouldUpdateCodeLenses = false
+        // return
+      } else {
+        this.visibleIndex = 0
       }
 
       this.shouldUpdateCodeLenses = true
@@ -121,38 +139,47 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
-    console.log('provider')
+    // console.log('provider')
 
     if (!this.shouldUpdateCodeLenses) {
       return this.codeLenses
     }
 
-    if (this.showCodeLenses) {
-      this.codeLenses = []
-
-      let range = new vscode.Range(this.codeLensLine, 0, this.codeLensLine, 0)
-
-      this.codeLenses.push(new vscode.CodeLens(range))
-
-      return this.codeLenses
+    if (!this.showCodeLenses) {
+      return []
     }
 
-    return []
+    if (this.browsingHistory) {
+    }
+
+    this.codeLenses = []
+
+    let range = new vscode.Range(this.codeLensLine, 0, this.codeLensLine, 0)
+
+    this.codeLenses.push(new vscode.CodeLens(range))
+
+    return this.codeLenses
   }
 
   public resolveCodeLens(
     codeLens: vscode.CodeLens,
     token: vscode.CancellationToken
   ) {
-    console.log('resolver')
+    // console.log('resolver')
+    console.log('visible: ' + this.visibleIndex)
+    console.log(
+      'painnnn:  ' +
+        this.changesRangesHistoryArray[this.visibleIndex]?.start.line
+    )
+    this.logHistory()
 
     codeLens.command = {
       title:
         'you were working on: ' +
         //@ts-ignore
-        (this.changesRangesHistoryArray[0]?.start.line + 1),
+        (this.changesRangesHistoryArray[this.visibleIndex]?.start.line + 1),
       command: 'teleport.teleportToWormhole',
-      arguments: [this.changesRangesHistoryArray[1]],
+      arguments: [this.changesRangesHistoryArray[0]],
     }
 
     return codeLens

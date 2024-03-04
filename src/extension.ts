@@ -23,7 +23,10 @@ export function activate(context: vscode.ExtensionContext) {
         if (editor) {
           const line = args[0]
           const character = Number.MAX_VALUE
-          const range = new vscode.Range(line, character, line, character)
+          // const range = new vscode.Range(line, character, line, character)
+          const range = args[0]
+
+          codelensProvider.toggleBrowsingHistory(true)
 
           editor.selection = new vscode.Selection(range.start, range.end)
           editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
