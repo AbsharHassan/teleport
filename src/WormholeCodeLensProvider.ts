@@ -143,9 +143,11 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
       this._onDidChangeCodeLenses.fire()
 
-      this.logHistory()
+      // this.logHistory()
 
-      console.log({ browsingIndex: this.browsingIndex })
+      // console.log({ browsingIndex: this.browsingIndex })
+
+      // console.log('in history??? : ' + this.isBrowsingHistory)
     })
   }
 
@@ -161,6 +163,15 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
     if (this.isBrowsingHistory) {
       this.codeLenses = []
+
+      // check if the last (oldest) entry is selected
+      if (this.browsingIndex + 1 >= this.wormholeCount) {
+        let range = new vscode.Range(this.codeLensLine, 0, this.codeLensLine, 0)
+
+        this.codeLenses.push(new vscode.CodeLens(range))
+
+        return this.codeLenses
+      }
 
       let rangeFirst = new vscode.Range(
         this.codeLensLine,
