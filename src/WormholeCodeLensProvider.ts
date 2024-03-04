@@ -121,7 +121,6 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       } else {
         this.visibleIndex = 0
       }
-      this.shouldUpdateCodeLenses = true
       this.codeLensLine = currentLine
       this.showCodeLenses = true
 
