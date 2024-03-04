@@ -158,15 +158,21 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
     // console.log('provider')
 
-    if (!this.showCodeLenses) {
+    if (
+      !this.showCodeLenses ||
+      !this.changesRangesHistoryArray[this.browsingIndex]
+    ) {
       return []
     }
 
     if (this.isBrowsingHistory) {
       this.codeLenses = []
 
-      // check if the last (oldest) entry is selected
-      if (this.browsingIndex + 1 >= this.wormholeCount) {
+      // check if the last (oldest) entry is selected or if the next entry is undefined
+      if (
+        this.browsingIndex + 1 >= this.wormholeCount ||
+        !this.changesRangesHistoryArray[this.browsingIndex + 1]
+      ) {
         let range = new vscode.Range(this.codeLensLine, 0, this.codeLensLine, 0)
 
         this.codeLenses.push(new vscode.CodeLens(range))
