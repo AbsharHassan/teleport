@@ -120,13 +120,14 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
         if (currentLine === range?.start.line) {
           this.isBrowsingHistory = true
-          this.browsingIndex = i + 1
+          this.browsingIndex = i
           break
         }
       }
 
-      console.log(this.isBrowsingHistory)
-      console.log(this.browsingIndex)
+      this.logHistory()
+
+      console.log({ browsingIndex: this.browsingIndex })
 
       // To make sure the codeLens doesnt change while the user is currently working in the recentmost range
       if (currentLine === this.changesRangesHistoryArray[0]?.start.line) {
