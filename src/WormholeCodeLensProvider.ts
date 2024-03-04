@@ -75,7 +75,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
    * toggleBrowsingHistory
    */
   public toggleBrowsingHistory(value: boolean) {
-    this.browsingHistory = value
+    this.isBrowsingHistory = value
   }
 
   private wormholeCount = 4
@@ -87,8 +87,8 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private codeLensLine: number = 0
   private prevWorkingLine = -1
 
-  private browsingHistory = false
-  // private browsingIndex
+  private isBrowsingHistory = false
+  private browsingIndex = 1
   private visibleIndex = 0
 
   constructor(wormholeCount = 4) {
@@ -115,12 +115,30 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     vscode.window.onDidChangeTextEditorSelection((event) => {
       const currentLine = event.selections[0].start.line
 
+      for (let i = 1; i < this.changesRangesHistoryArray.length; i++) {
+        const range = this.changesRangesHistoryArray[i]
+
+        if (currentLine === range?.start.line) {
+          this.isBrowsingHistory = true
+          this.browsingIndex = i + 1
+          break
+        }
+      }
+
+      console.log(this.isBrowsingHistory)
+      console.log(this.browsingIndex)
+
       // To make sure the codeLens doesnt change while the user is currently working in the recentmost range
       if (currentLine === this.changesRangesHistoryArray[0]?.start.line) {
         this.visibleIndex = 1
       } else {
         this.visibleIndex = 0
       }
+
+      if (this.isBrowsingHistory) {
+        this.visibleIndex = this.browsingIndex
+      }
+
       this.codeLensLine = currentLine
       this.showCodeLenses = true
 
@@ -132,13 +150,34 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
-    console.log('provider')
+    // console.log('provider')
 
     if (!this.showCodeLenses) {
       return []
     }
 
-    if (this.browsingHistory) {
+    if (this.isBrowsingHistory) {
+      this.codeLenses = []
+
+      let rangeFirst = new vscode.Range(
+        this.codeLensLine,
+        0,
+        this.codeLensLine,
+        0
+      )
+      let rangeSecond = new vscode.Range(
+        this.codeLensLine,
+        1,
+        this.codeLensLine,
+        1
+      )
+
+      this.codeLenses.push(
+        new vscode.CodeLens(rangeFirst),
+        new vscode.CodeLens(rangeSecond)
+      )
+
+      return this.codeLenses
     }
 
     this.codeLenses = []
@@ -154,15 +193,59 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     codeLens: vscode.CodeLens,
     token: vscode.CancellationToken
   ) {
-    codeLens.command = {
-      title:
-        'you were working on: ' +
-        //@ts-ignore
-        (this.changesRangesHistoryArray[this.visibleIndex]?.start.line + 1),
-      command: 'teleport.teleportToWormhole',
-      arguments: [this.changesRangesHistoryArray[this.visibleIndex]],
+    if (!this.isBrowsingHistory) {
+      codeLens.command = {
+        title:
+          '(add hotkeys) You came from line: ' +
+          //@ts-ignore
+          (this.changesRangesHistoryArray[this.visibleIndex]?.start.line + 1),
+        tooltip: 'Use this to navigate between your recent most changes',
+        command: 'teleport.teleportToWormhole',
+        arguments: [this.changesRangesHistoryArray[this.visibleIndex]],
+      }
+    } else {
+      switch (codeLens.range.start.character) {
+        case 0:
+          codeLens.command = {
+            title:
+              '(add hotkeys) Go forward to line: ' +
+              //@ts-ignore
+              (this.changesRangesHistoryArray[this.visibleIndex - 1]?.start
+                .line +
+                1),
+            command: 'teleport.teleportToWormhole',
+            arguments: [this.changesRangesHistoryArray[this.visibleIndex - 1]],
+          }
+          break
+        case 1:
+          codeLens.command = {
+            title:
+              `${
+                this.visibleIndex > 0
+                  ? '(add hotkeys) Go even further back to line: '
+                  : '(add hotkeys) You came from line: '
+              }` +
+              //@ts-ignore
+              (this.changesRangesHistoryArray[this.visibleIndex + 1]?.start
+                .line +
+                1),
+            command: 'teleport.teleportToWormhole',
+            arguments: [this.changesRangesHistoryArray[this.visibleIndex + 1]],
+          }
+      }
     }
 
     return codeLens
+
+    // codeLens.command = {
+    //   title:
+    //     'you were working on: ' +
+    //     //@ts-ignore
+    //     (this.changesRangesHistoryArray[this.visibleIndex]?.start.line + 1),
+    //   command: 'teleport.teleportToWormhole',
+    //   arguments: [this.changesRangesHistoryArray[this.visibleIndex]],
+    // }
+
+    // return codeLens
   }
 }
