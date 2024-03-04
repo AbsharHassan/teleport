@@ -37,17 +37,6 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       shouldIgnoreChange = true
     }
 
-    // if (shouldIgnoreChange) {
-    //   // console.log('starting')
-
-    //   // this.changesRangesHistoryArray.map((range) => {
-    //   //   console.log({ start: range?.start.line, end: range?.end.line })
-    //   // })
-
-    //   // console.log('ending')
-    //   return
-    // }
-
     let inRangeHistoryIndex = -1
 
     // for-loop chosen instead of .map() in order to incorporate break operator, since .contains() method may be costly
@@ -72,39 +61,28 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     }
   }
 
-  private debouncingFunc = (cb: any, delay = 100) => {
-    let timeout: any
-
-    return (...args: any) => {
-      clearTimeout(timeout)
-
-      timeout = setTimeout(() => {
-        cb(...args)
-      }, delay)
-    }
+  private logHistory = () => {
+    console.log('starting')
+    this.changesRangesHistoryArray.map((range, index) => {
+      console.log(index + ': ' + range?.start.line)
+    })
+    console.log('ending')
   }
-
-  private debouncedUpdateWorkingHistory = this.debouncingFunc(
-    this.updateWorkingHistory
-  )
 
   private wormholeCount = 4
   private linesFromFirstChange = 0
   private codeLenses: vscode.CodeLens[] = []
-  private workingLine: number = -1
   private workingLinesHistoryArray: number[] = []
   private changesRangesHistoryArray: (vscode.Range | undefined)[] = []
   private showCodeLenses = false
   private codeLensLine: number = 0
   private prevWorkingLine = -1
-  private prevSelectionLine = -1
 
-  private lineToAdd = -1
-
-  private oldLenses = false
+  private shouldUpdateCodeLenses = false
 
   constructor(wormholeCount = 4) {
     this.wormholeCount = wormholeCount
+
     for (let i = 0; i < wormholeCount; i++) {
       this.workingLinesHistoryArray[i] = -1
     }
@@ -118,16 +96,6 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
       if (currentLine !== this.prevWorkingLine) {
         this.updateWorkingHistory(currentLine)
-        // console.log('yeah hello i guess')
-
-        // this.lineToAdd = currentLine
-
-        // console.log('starting')
-
-        // this.changesRangesHistoryArray.map((range, index) => {
-        //   console.log(index + ': ' + range?.start.line)
-        // })
-        // console.log('ending')
 
         this.prevWorkingLine = currentLine
       }
@@ -136,68 +104,16 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     vscode.window.onDidChangeTextEditorSelection((event) => {
       const currentLine = event.selections[0].start.line
 
-      // console.log({ prev: this.prevWorkingLine })
-      // console.log({ currentLine })
-      // console.log(this.prevWorkingLine === currentLine)
-
-      // if (this.lineToAdd > -1 && currentLine !== this.lineToAdd) {
-      //   this.updateWorkingHistory(this.lineToAdd)
-      // }
-
-      // console.log('starting')
-      // this.changesRangesHistoryArray.map((range, index) => {
-      //   console.log(index + ': ' + range?.start.line)
-      // })
-      // console.log('ending')
-
-      console.log(currentLine)
-
-      console.log(this.changesRangesHistoryArray[0]?.start.line)
-
-      console.log(currentLine === this.changesRangesHistoryArray[0]?.start.line)
-
       if (currentLine === this.changesRangesHistoryArray[0]?.start.line) {
-        this.oldLenses = true
+        this.shouldUpdateCodeLenses = false
         return
       }
-      this.oldLenses = false
 
-      // if (
-      //   this.prevSelectionLine === -1 ||
-      //   this.prevSelectionLine === currentLine ||
-      //   currentLine === this.changesRangesHistoryArray[0]?.start.line
-      // ) {
-      //   this.prevSelectionLine = currentLine
-      //   return
-      // }
-
-      console.log('we came here')
-
-      this.codeLensLine = currentLine
-      this.showCodeLenses = false
-
-      // console.log('starting')
-
-      // this.changesRangesHistoryArray.map((range, index) => {
-      //   console.log(index + ': ' + range?.start.line)
-      // })
-      // console.log('ending')
-
+      this.shouldUpdateCodeLenses = true
       this.codeLensLine = currentLine
       this.showCodeLenses = true
 
-      // this.changesRangesHistoryArray.map((range, index) => {
-      //   if (range?.contains(new vscode.Position(currentLine, 0))) {
-      //     console.log('in range ' + index)
-
-      //     this.codeLensLine = range.start.line
-      //     this.showCodeLenses = true
-      //   }
-      // })
-
       this._onDidChangeCodeLenses.fire()
-
-      this.prevSelectionLine = currentLine
     })
   }
 
@@ -207,7 +123,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
     console.log('provider')
 
-    if (this.oldLenses) {
+    if (!this.shouldUpdateCodeLenses) {
       return this.codeLenses
     }
 
@@ -232,7 +148,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
     codeLens.command = {
       title:
-        'so much for the past 3 weeks lmao kill yourself, also you were working on ' +
+        'you were working on: ' +
         //@ts-ignore
         (this.changesRangesHistoryArray[0]?.start.line + 1),
       command: 'teleport.teleportToWormhole',
