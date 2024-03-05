@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { HistoryEntry } from './types'
 
 // flow: store the line where there was a change and when a line is selected, navigate to that line. Add a delay when typing the new line or perhaps wait until the user navigates away and then remove the codelens. Starting with a simple approach to grouping
 
@@ -9,20 +10,23 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     this._onDidChangeCodeLenses.event
 
   private updateWorkingHistory = (currentLine: number) => {
-    const newRange = new vscode.Range(
-      // this is done to prevent -ve values for range start
-      Math.max(currentLine - this.linesFromFirstChange, 0),
-      0,
-      currentLine + this.linesFromFirstChange,
-      0
-    )
+    const newEntry: HistoryEntry = {
+      range: new vscode.Range(
+        // this is done to prevent -ve values for range start
+        Math.max(currentLine - this.linesFromFirstChange, 0),
+        0,
+        currentLine + this.linesFromFirstChange,
+        0
+      ),
+      workingLine: currentLine,
+    }
 
     let shouldIgnoreChange = false
 
     // // for-loop chosen instead of .map() in order to incorporate break operator, since .intersetion() method may be costly
     // for (let i = 0; i < this.changesRangesHistoryArray.length; i++) {
     //   const intersects = this.changesRangesHistoryArray[i]?.intersection(
-    //     newRange
+    //     newEntry
     //   )
     //     ? true
     //     : false
@@ -33,7 +37,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     // }
 
     // only to check the recent most change
-    if (this.changesRangesHistoryArray[0]?.intersection(newRange)) {
+    if (this.changesRangesHistoryArray[0]?.range.intersection(newEntry.range)) {
       shouldIgnoreChange = true
       return
     }
@@ -42,7 +46,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
     // for-loop chosen instead of .map() in order to incorporate break operator, since .contains() method may be costly
     for (let i = 0; i < this.changesRangesHistoryArray.length; i++) {
-      const contains = this.changesRangesHistoryArray[i]?.contains(newRange)
+      const contains = this.changesRangesHistoryArray[i]?.range.contains(
+        newEntry.range
+      )
       if (contains) {
         inRangeHistoryIndex = i
         break
@@ -51,7 +57,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
     if (inRangeHistoryIndex > -1) {
       this.changesRangesHistoryArray.splice(inRangeHistoryIndex, 1)
-      this.changesRangesHistoryArray.unshift(newRange)
+      this.changesRangesHistoryArray.unshift(newEntry)
     } else {
       // remove the last history element and shift all positions to accomodate the new value
       for (let i = this.changesRangesHistoryArray.length - 1; i > 0; i--) {
@@ -59,14 +65,17 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
           this.changesRangesHistoryArray[i - 1]
       }
 
-      this.changesRangesHistoryArray[0] = newRange
+      this.changesRangesHistoryArray[0] = newEntry
     }
   }
 
   private logHistory = () => {
     console.log('starting')
-    this.changesRangesHistoryArray.map((range, index) => {
-      console.log(index + ': ' + range?.start.line)
+    this.changesRangesHistoryArray.map((entry, index) => {
+      // console.log(index + ': ' + entry?.range.start.line)
+      console.log(
+        index + ': ' + entry?.workingLine + ', ' + entry?.workingCharacter
+      )
     })
     console.log('ending')
   }
@@ -82,14 +91,13 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private linesFromFirstChange = 0
   private codeLenses: vscode.CodeLens[] = []
   private workingLinesHistoryArray: number[] = []
-  private changesRangesHistoryArray: (vscode.Range | undefined)[] = []
+  private changesRangesHistoryArray: (HistoryEntry | undefined)[] = []
   private showCodeLenses = false
   private codeLensLine: number = 0
   private prevWorkingLine = -1
-
   private isBrowsingHistory = false
-
   private browsingIndex = 0
+  private characterToStore = 0
 
   constructor(wormholeCount = 4) {
     this.wormholeCount = wormholeCount
@@ -118,9 +126,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
       // to check if user is navigating between the stored wormholes
       for (let i = 1; i < this.changesRangesHistoryArray.length; i++) {
-        const range = this.changesRangesHistoryArray[i]
+        const entry = this.changesRangesHistoryArray[i]
 
-        if (currentLine === range?.start.line) {
+        if (currentLine === entry?.range.start.line) {
           this.isBrowsingHistory = true
           this.browsingIndex = i
           break
@@ -131,9 +139,17 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
       if (!this.isBrowsingHistory) {
         // To make sure the codeLens doesnt change while the user is currently working in the recentmost range
-        if (currentLine === this.changesRangesHistoryArray[0]?.start.line) {
+        if (
+          currentLine === this.changesRangesHistoryArray[0]?.range.start.line
+        ) {
           this.browsingIndex = 1
         } else {
+          // console.log('characterToStore:   ' + this.characterToStore)
+          if (this.changesRangesHistoryArray[0]) {
+            this.changesRangesHistoryArray[0].workingCharacter =
+              this.characterToStore
+          }
+
           this.browsingIndex = 0
         }
       } else {
@@ -144,11 +160,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
       this._onDidChangeCodeLenses.fire()
 
-      // this.logHistory()
-
-      // console.log({ browsingIndex: this.browsingIndex })
-
-      // console.log('in history??? : ' + this.isBrowsingHistory)
+      if (!this.changesRangesHistoryArray[0]?.workingCharacter) {
+        this.characterToStore = event.selections[0].active.character
+      }
     })
   }
 
@@ -214,30 +228,35 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     codeLens: vscode.CodeLens,
     token: vscode.CancellationToken
   ) {
+    this.logHistory()
+
     if (!this.isBrowsingHistory) {
       const line =
-        this.changesRangesHistoryArray[this.browsingIndex]?.start.line ?? NaN
+        this.changesRangesHistoryArray[this.browsingIndex]?.range.start.line ??
+        NaN
       codeLens.command = {
         title: '(add hotkeys) You came from line: ' + (line + 1),
         tooltip: 'Use this to navigate between your recent most changes',
         command: 'teleport.teleportToWormhole',
-        arguments: [this.changesRangesHistoryArray[this.browsingIndex]],
+        arguments: [this.changesRangesHistoryArray[this.browsingIndex]?.range],
       }
     } else {
       switch (codeLens.range.start.character) {
         case 0:
           const lineForward =
-            this.changesRangesHistoryArray[this.browsingIndex - 1]?.start
+            this.changesRangesHistoryArray[this.browsingIndex - 1]?.range.start
               .line ?? NaN
           codeLens.command = {
             title: '(add hotkeys) Go forward to line: ' + (lineForward + 1),
             command: 'teleport.teleportToWormhole',
-            arguments: [this.changesRangesHistoryArray[this.browsingIndex - 1]],
+            arguments: [
+              this.changesRangesHistoryArray[this.browsingIndex - 1]?.range,
+            ],
           }
           break
         case 1:
           const lineBackward =
-            this.changesRangesHistoryArray[this.browsingIndex + 1]?.start
+            this.changesRangesHistoryArray[this.browsingIndex + 1]?.range.start
               .line ?? NaN
           codeLens.command = {
             title:
@@ -248,7 +267,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
               }` +
               (lineBackward + 1),
             command: 'teleport.teleportToWormhole',
-            arguments: [this.changesRangesHistoryArray[this.browsingIndex + 1]],
+            arguments: [
+              this.changesRangesHistoryArray[this.browsingIndex + 1]?.range,
+            ],
           }
           break
       }
