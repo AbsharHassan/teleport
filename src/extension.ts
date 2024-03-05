@@ -18,21 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       'teleport.teleportToWormhole',
       (...args) => {
-        const editor = vscode.window.activeTextEditor
-
-        if (editor) {
-          const line = args[0].workingLine
-          const character = args[0].workingCharacter ?? Number.MAX_VALUE
-
-          const range = new vscode.Range(line, character, line, character)
-
-          codelensProvider.toggleBrowsingHistory(true)
-
-          editor.selection = new vscode.Selection(range.start, range.end)
-          editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
-
-          disappearingDecoration(editor, range)
-        }
+        codelensProvider.teleport(args[0])
       }
     )
   )
