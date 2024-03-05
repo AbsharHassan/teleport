@@ -21,18 +21,16 @@ export function activate(context: vscode.ExtensionContext) {
         const editor = vscode.window.activeTextEditor
 
         if (editor) {
-          const line = args[0]
-          const character = Number.MAX_VALUE
-          // const range = new vscode.Range(line, character, line, character)
-          const range = args[0]
+          const line = args[0].workingLine
+          const character = args[0].workingCharacter ?? Number.MAX_VALUE
+
+          const range = new vscode.Range(line, character, line, character)
 
           codelensProvider.toggleBrowsingHistory(true)
 
           editor.selection = new vscode.Selection(range.start, range.end)
           editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
 
-          // fadeOutDecoration(editor, range)
-          // blinkingDecoration(editor, range)
           disappearingDecoration(editor, range)
         }
       }
