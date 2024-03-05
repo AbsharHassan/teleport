@@ -238,7 +238,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
         title: '(add hotkeys) You came from line: ' + (line + 1),
         tooltip: 'Use this to navigate between your recent most changes',
         command: 'teleport.teleportToWormhole',
-        arguments: [this.changesRangesHistoryArray[this.browsingIndex]?.range],
+        arguments: [this.changesRangesHistoryArray[this.browsingIndex]],
       }
     } else {
       switch (codeLens.range.start.character) {
@@ -249,9 +249,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
           codeLens.command = {
             title: '(add hotkeys) Go forward to line: ' + (lineForward + 1),
             command: 'teleport.teleportToWormhole',
-            arguments: [
-              this.changesRangesHistoryArray[this.browsingIndex - 1]?.range,
-            ],
+            arguments: [this.changesRangesHistoryArray[this.browsingIndex - 1]],
           }
           break
         case 1:
@@ -267,9 +265,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
               }` +
               (lineBackward + 1),
             command: 'teleport.teleportToWormhole',
-            arguments: [
-              this.changesRangesHistoryArray[this.browsingIndex + 1]?.range,
-            ],
+            arguments: [this.changesRangesHistoryArray[this.browsingIndex + 1]],
           }
           break
       }
