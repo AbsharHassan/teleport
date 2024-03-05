@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { HistoryEntry } from './types'
+import { disappearingDecoration } from './utils/decoratorFunctions'
 
 // flow: store the line where there was a change and when a line is selected, navigate to that line. Add a delay when typing the new line or perhaps wait until the user navigates away and then remove the codelens. Starting with a simple approach to grouping
 
@@ -78,6 +79,45 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
       )
     })
     console.log('ending')
+  }
+
+  /**
+   * teleport
+   */
+  public teleport(tragetIndex = 1, direction: -1 | 1) {
+    // switch (direction) {
+    //   case -1:
+    //     if (this.browsingIndex > 0) {
+    //       this.browsingIndex--
+    //     }
+    //     break
+    //   case 1:
+    //     if (this.browsingIndex + 1 < this.wormholeCount) {
+    //       this.browsingIndex++
+    //     }
+    //   default:
+    //     break
+    // }
+
+    const editor = vscode.window.activeTextEditor
+
+    if (editor) {
+      const line = this.changesRangesHistoryArray[tragetIndex]?.workingLine
+      const character =
+        this.changesRangesHistoryArray[tragetIndex]?.workingCharacter ??
+        Number.MAX_VALUE
+
+      if (line === undefined || character === undefined) {
+        return
+      }
+
+      const range = new vscode.Range(line, character, line, character)
+
+      editor.selection = new vscode.Selection(range.start, range.end)
+      editor.revealRange(range, vscode.TextEditorRevealType.InCenter)
+
+      disappearingDecoration(editor, range)
+    }
   }
 
   /**
