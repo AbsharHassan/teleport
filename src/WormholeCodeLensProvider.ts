@@ -153,6 +153,15 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
           this.browsingIndex = 0
         }
       } else {
+        if (
+          currentLine === this.changesRangesHistoryArray[0]?.range.start.line
+        ) {
+        } else {
+          if (this.changesRangesHistoryArray[0]) {
+            this.changesRangesHistoryArray[0].workingCharacter =
+              this.characterToStore
+          }
+        }
       }
 
       this.codeLensLine = currentLine
