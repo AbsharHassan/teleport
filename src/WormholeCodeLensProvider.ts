@@ -84,7 +84,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   /**
    * teleport
    */
-  public teleport(direction: -1 | 1) {
+  public teleport(offset: number) {
     // switch (direction) {
     //   case -1:
     //     if (this.browsingIndex > 0) {
@@ -103,10 +103,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
     if (editor) {
       const line =
-        this.changesRangesHistoryArray[this.browsingIndex + direction]
-          ?.workingLine
+        this.changesRangesHistoryArray[this.browsingIndex + offset]?.workingLine
       const character =
-        this.changesRangesHistoryArray[this.browsingIndex + direction]
+        this.changesRangesHistoryArray[this.browsingIndex + offset]
           ?.workingCharacter ?? Number.MAX_VALUE
 
       if (line === undefined || character === undefined) {
