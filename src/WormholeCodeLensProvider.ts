@@ -88,6 +88,10 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     // set index to 1 if user was not inside history in order to go the recentmost history item
     let index = this.isBrowsingHistory ? this.browsingIndex + direction : 1
 
+    if (index + 1 > this.wormholeCount || index < 0) {
+      return
+    }
+
     const editor = vscode.window.activeTextEditor
 
     if (editor) {
