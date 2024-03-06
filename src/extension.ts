@@ -23,11 +23,11 @@ export function activate(context: vscode.ExtensionContext) {
     ),
 
     vscode.commands.registerCommand('teleport.teleportBack', () => {
-      codelensProvider.teleport(-1)
+      codelensProvider.teleport(1)
     }),
 
     vscode.commands.registerCommand('teleport.teleportForward', () => {
-      codelensProvider.teleport(1)
+      codelensProvider.teleport(-1)
     })
   )
 
