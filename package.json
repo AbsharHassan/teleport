@@ -18,15 +18,23 @@
       {
         "title": "Teleport",
         "command": "teleport.teleportToWormhole"
+      },
+      {
+        "title": "Teleport to previous wormhole",
+        "command": "teleport.teleportBack"
+      },
+      {
+        "title": "Teleport to the next wormhole",
+        "command": "teleport.teleportForward"
       }
     ],
     "keybindings": [
       {
-        "command": "teleport.teleportToWormhole",
+        "command": "teleport.teleportBack",
         "key": "ctrl+alt+left"
       },
       {
-        "command": "teleport.teleportToWormhole",
+        "command": "teleport.teleportForward",
         "key": "ctrl+alt+right"
       }
     ],
