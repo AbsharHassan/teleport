@@ -20,6 +20,16 @@
         "command": "teleport.teleportToWormhole"
       }
     ],
+    "keybindings": [
+      {
+        "command": "teleport.teleportToWormhole",
+        "key": "ctrl+alt+left"
+      },
+      {
+        "command": "teleport.teleportToWormhole",
+        "key": "ctrl+alt+right"
+      }
+    ],
     "configuration": {
       "properties": {
         "teleport.enableCodeLens": {
