@@ -20,7 +20,15 @@ export function activate(context: vscode.ExtensionContext) {
       (...args) => {
         codelensProvider.teleport(args[0])
       }
-    )
+    ),
+
+    vscode.commands.registerCommand('teleport.teleportBack', () => {
+      codelensProvider.teleport(-1)
+    }),
+
+    vscode.commands.registerCommand('teleport.teleportForward', () => {
+      codelensProvider.teleport(1)
+    })
   )
 
   context.subscriptions.push(...disposables)
