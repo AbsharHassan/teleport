@@ -85,8 +85,8 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
    * teleport
    */
   public teleport(direction: -1 | 1) {
-    // set index to 0 if user was not inside history in order to go the recentmost history item
-    let index = this.isBrowsingHistory ? this.browsingIndex + direction : 0
+    // set index to 1 if user was not inside history in order to go the recentmost history item
+    let index = this.isBrowsingHistory ? this.browsingIndex + direction : 1
 
     const editor = vscode.window.activeTextEditor
 
