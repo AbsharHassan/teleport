@@ -330,7 +330,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
         title: '(add hotkeys) You came from line: ' + (shownLine + 1),
         tooltip: 'Use this to navigate between your recent most changes',
         command: 'teleport.teleportToWormhole',
-        arguments: [-1],
+        arguments: [1],
       }
     } else {
       switch (codeLens.range.start.character) {
