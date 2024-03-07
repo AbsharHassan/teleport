@@ -72,10 +72,14 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
 
   private logHistory = () => {
     console.log('starting')
-    this.changesRangesHistoryArray.map((entry, index) => {
-      // console.log(index + ': ' + entry?.range.start.line)
+    this.changesRangesHistoryArray.map((entry, clampedIndex) => {
+      // console.log(clampedIndex + ': ' + entry?.range.start.line)
       console.log(
-        index + ': ' + entry?.workingLine + ', ' + entry?.workingCharacter
+        clampedIndex +
+          ': ' +
+          entry?.workingLine +
+          ', ' +
+          entry?.workingCharacter
       )
     })
     console.log('ending')
@@ -88,24 +92,23 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     // set index to 1 if user was not inside history in order to go the recentmost history item
     console.log('in history?? :      ' + this.isBrowsingHistory)
 
-    let index = this.isBrowsingHistory
-      ? this.browsingIndex + direction
-      : direction === -1
-      ? 0
-      : 1
+    let clampedIndex = Math.min(
+      Math.max(this.browsingIndex + direction, 0),
+      this.wormholeCount - 1
+    )
 
-    console.log({ index })
+    console.log({ clampedIndex })
 
-    if (index + 1 > this.wormholeCount || index < 0) {
+    if (clampedIndex + 1 > this.wormholeCount || clampedIndex < 0) {
       return
     }
 
     const editor = vscode.window.activeTextEditor
 
     if (editor) {
-      const line = this.changesRangesHistoryArray[index]?.workingLine
+      const line = this.changesRangesHistoryArray[clampedIndex]?.workingLine
       const character =
-        this.changesRangesHistoryArray[index]?.workingCharacter ??
+        this.changesRangesHistoryArray[clampedIndex]?.workingCharacter ??
         Number.MAX_VALUE
 
       if (line === undefined || character === undefined) {
