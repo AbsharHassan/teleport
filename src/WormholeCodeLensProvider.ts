@@ -86,7 +86,15 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
    */
   public teleport(direction: -1 | 1) {
     // set index to 1 if user was not inside history in order to go the recentmost history item
-    let index = this.isBrowsingHistory ? this.browsingIndex + direction : 1
+    console.log('in history?? :      ' + this.isBrowsingHistory)
+
+    let index = this.isBrowsingHistory
+      ? this.browsingIndex + direction
+      : direction === -1
+      ? 0
+      : 1
+
+    console.log({ index })
 
     if (index + 1 > this.wormholeCount || index < 0) {
       return
@@ -131,6 +139,7 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
   private isBrowsingHistory = false
   private browsingIndex = 0
   private characterToStore = 0
+  private shownHistoryIndex = 0
 
   constructor(wormholeCount = 4) {
     this.wormholeCount = wormholeCount
@@ -157,6 +166,9 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     vscode.window.onDidChangeTextEditorSelection((event) => {
       const currentLine = event.selections[0].start.line
 
+      this.isBrowsingHistory = false
+      this.browsingIndex = 0
+
       // to check if user is navigating between the stored wormholes
       for (let i = 1; i < this.changesRangesHistoryArray.length; i++) {
         const entry = this.changesRangesHistoryArray[i]
@@ -165,35 +177,13 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
           this.isBrowsingHistory = true
           this.browsingIndex = i
           break
-        } else {
-          this.isBrowsingHistory = false
         }
       }
 
-      if (!this.isBrowsingHistory) {
-        // To make sure the codeLens doesnt change while the user is currently working in the recentmost range
-        if (
-          currentLine === this.changesRangesHistoryArray[0]?.range.start.line
-        ) {
-          this.browsingIndex = 1
-        } else {
-          // console.log('characterToStore:   ' + this.characterToStore)
-          if (this.changesRangesHistoryArray[0]) {
-            this.changesRangesHistoryArray[0].workingCharacter =
-              this.characterToStore
-          }
-
-          this.browsingIndex = 0
-        }
-      } else {
-        if (
-          currentLine === this.changesRangesHistoryArray[0]?.range.start.line
-        ) {
-        } else {
-          if (this.changesRangesHistoryArray[0]) {
-            this.changesRangesHistoryArray[0].workingCharacter =
-              this.characterToStore
-          }
+      if (currentLine !== this.changesRangesHistoryArray[0]?.range.start.line) {
+        if (this.changesRangesHistoryArray[0]) {
+          this.changesRangesHistoryArray[0].workingCharacter =
+            this.characterToStore
         }
       }
 
@@ -206,6 +196,59 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
         this.characterToStore = event.selections[0].active.character
       }
     })
+
+    // vscode.window.onDidChangeTextEditorSelection((event) => {
+    //   const currentLine = event.selections[0].start.line
+
+    //   // to check if user is navigating between the stored wormholes
+    //   for (let i = 1; i < this.changesRangesHistoryArray.length; i++) {
+    //     const entry = this.changesRangesHistoryArray[i]
+
+    //     if (currentLine === entry?.range.start.line) {
+    //       this.isBrowsingHistory = true
+    //       this.browsingIndex = i
+    //       break
+    //     } else {
+    //       this.isBrowsingHistory = false
+    //     }
+    //   }
+
+    //   if (!this.isBrowsingHistory) {
+    //     // To make sure the codeLens doesnt change while the user is currently working in the recentmost range
+    //     if (
+    //       currentLine === this.changesRangesHistoryArray[0]?.range.start.line
+    //     ) {
+    //       this.browsingIndex = 1
+    //     } else {
+    //       // console.log('characterToStore:   ' + this.characterToStore)
+    //       if (this.changesRangesHistoryArray[0]) {
+    //         this.changesRangesHistoryArray[0].workingCharacter =
+    //           this.characterToStore
+    //       }
+
+    //       this.browsingIndex = 0
+    //     }
+    //   } else {
+    //     if (
+    //       currentLine === this.changesRangesHistoryArray[0]?.range.start.line
+    //     ) {
+    //     } else {
+    //       if (this.changesRangesHistoryArray[0]) {
+    //         this.changesRangesHistoryArray[0].workingCharacter =
+    //           this.characterToStore
+    //       }
+    //     }
+    //   }
+
+    //   this.codeLensLine = currentLine
+    //   this.showCodeLenses = true
+
+    //   this._onDidChangeCodeLenses.fire()
+
+    //   if (!this.changesRangesHistoryArray[0]?.workingCharacter) {
+    //     this.characterToStore = event.selections[0].active.character
+    //   }
+    // })
   }
 
   public provideCodeLenses(
@@ -270,14 +313,18 @@ export class WormholeCodeLensProvider implements vscode.CodeLensProvider {
     codeLens: vscode.CodeLens,
     token: vscode.CancellationToken
   ) {
-    this.logHistory()
+    // this.logHistory()
 
     if (!this.isBrowsingHistory) {
-      const line =
-        this.changesRangesHistoryArray[this.browsingIndex]?.range.start.line ??
-        NaN
+      const lineAtZero =
+        this.changesRangesHistoryArray[0]?.range.start.line ?? NaN
+      const lineAtOne =
+        this.changesRangesHistoryArray[1]?.range.start.line ?? NaN
+
+      const shownLine =
+        lineAtZero !== this.codeLensLine ? lineAtZero : lineAtOne
       codeLens.command = {
-        title: '(add hotkeys) You came from line: ' + (line + 1),
+        title: '(add hotkeys) You came from line: ' + (shownLine + 1),
         tooltip: 'Use this to navigate between your recent most changes',
         command: 'teleport.teleportToWormhole',
         arguments: [-1],
